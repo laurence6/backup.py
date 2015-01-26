@@ -23,25 +23,77 @@ from os.path import basename, dirname
 from sys import argv, path
 
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
+
+class BACKUP:
+    def __init__(self):
+        self.ori_dir = self.des_dir = self.include = self.exclude = self.options = self.command = self.totaltime = ''
+
+    def set_ori_dir(self, arg):
+        self.ori_dir = arg if arg[-1] == '/' else arg+'/'
+
+    def set_des_dir(self, arg):
+        self.des_dir = DES+arg
+
+    def set_include(self, arg):
+        self.include = ' '.join(['--include="%s"' % x for x in arg])
+
+    def set_exclude(self, arg):
+        self.exclude = ' '.join(['--exclude="%s"' % x for x in arg])
+
+    def set_options(self, arg):
+        arg.extend(argv)
+        self.options = ' '.join(arg)
+
+    def run(self):
+        self.command = 'rsync -aHAXv --delete --delete-excluded %s %s %s "%s" "%s"' %\
+                (self.options, self.include, self.exclude, self.ori_dir, self.des_dir)
+
+        start = int(time())
+        if call(self.command, shell=True, executable='/bin/bash'):
+            print('Something went wrong... The bash command:'+'\n'+self.command+'\n')
+            return
+        finish = int(time())
+
+        self.totaltime = 'total time: %s minutes, %s seconds' %\
+                ((finish-start)//60, (finish-start)%60)
+        print(self.totaltime+'\n')
+        self.log()
+
+    def log(self):
+        try:
+            logfile = open('%s/%s' % (self.des_dir,\
+                    strftime('%Y-%m-%d %H:%M:%S', localtime())), 'w')
+            logfile.write(self.totaltime)
+            logfile.close()
+        except FileNotFoundError:
+            pass
+
+    bk_ori_dir = property(fset=set_ori_dir)
+    bk_des_dir = property(fset=set_des_dir)
+    bk_include = property(fset=set_include)
+    bk_exclude = property(fset=set_exclude)
+    bk_options = property(fset=set_options)
+
 
 if __name__ == '__main__':
+    del argv[0]
     try:
-        conffile = argv[1] if argv[1][-3:] != '.py' else argv[1][:-3]
+        CONFFILE = argv.pop(0) if argv[0][-3:] != '.py' else argv.pop(0)[:-3]
 
-        path.append(dirname(conffile))
-        conf = __import__(basename(conffile))
+        path.append(dirname(CONFFILE))
+        CONF = __import__(basename(CONFFILE))
 
-        DES = getattr(conf, 'DES')
-        BACKUP_LIST = getattr(conf, 'BACKUP_LIST')
-    except AttributeError:
-        print('Config file contains some error')
-        exit()
-    except ImportError:
-        print('Import config file error')
-        exit()
+        DES = CONF.DES
+        BACKUP_LIST = CONF.BACKUP_LIST
     except IndexError:
         print('Required argument not found')
+        exit()
+    except ImportError:
+        print('Import configuration file error')
+        exit()
+    except AttributeError:
+        print('Configuration file is incorrect')
         exit()
 
     if geteuid() != 0:
@@ -49,26 +101,12 @@ if __name__ == '__main__':
         exit()
 
     for arglist in BACKUP_LIST:
-        if arglist['enabled']:
-            ori_dir, des_dir, include, exclude, options = arglist['ori_dir'], arglist['des_dir'], arglist['include'], arglist['exclude'], arglist['options']
-            ori_dir = ori_dir if ori_dir[-1] == '/' else ori_dir+'/'
-            des_dir = DES+des_dir
-            include = ' '.join(['--include="%s"' % x for x in include])
-            exclude = ' '.join(['--exclude="%s"' % x for x in exclude])
-            options = ' '.join(options)
-            command = 'rsync -aHAXv --delete --delete-excluded %s %s %s "%s" "%s"' % (options, include, exclude, ori_dir, des_dir)
-
-            start = int(time())
-            if call(command, shell=True, executable='/bin/bash'):
-                print('Something went wrong... The bash command:'+'\n'+command+'\n')
-                continue
-            finish = int(time())
-
-            totaltime = 'total time: %s minutes, %s seconds' % ((finish-start)//60, (finish-start)%60)
-            print(totaltime+'\n')
-            try:
-                logfile = open('%s/%s' % (des_dir, strftime('%Y-%m-%d %H:%M:%S', localtime())), 'w')
-                logfile.write(totaltime)
-                logfile.close()
-            except FileNotFoundError:
-                pass
+        backup = BACKUP()
+        try:
+            if arglist['enabled']:
+                for key in ('ori_dir', 'des_dir', 'include', 'exclude', 'options'):
+                    setattr(backup, 'bk_'+key, arglist[key])
+        except KeyError as e:
+            print('%s in config file is incorrect' % e)
+            exit()
+        backup.run()
