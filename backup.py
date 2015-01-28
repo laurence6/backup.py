@@ -23,9 +23,29 @@ from os.path import basename, dirname
 from sys import argv, path
 
 
-__version__ = '0.2.0'
+__NAME__ = basename(argv[0])
+__VERSION__ = '0.3.0'
 
-class BACKUP:
+
+def getconf(conffile):
+    try:
+        conffile = conffile if conffile[-3:] != '.py' else conffile[:-3]
+
+        path.append(dirname(conffile))
+        conf = __import__(basename(conffile))
+
+        des = conf.DES
+        backup_list = conf.BACKUP_LIST
+    except (ImportError, ValueError):
+        print('Import configuration file error')
+        exit()
+    except AttributeError:
+        print('Configuration file is incorrect')
+        exit()
+    return des, backup_list
+
+
+class BACKUP(object):
     def __init__(self):
         self.ori_dir = self.des_dir = self.include = self.exclude = self.options = self.command = self.totaltime = ''
 
@@ -77,27 +97,15 @@ class BACKUP:
 
 
 if __name__ == '__main__':
-    del argv[0]
-    try:
-        CONFFILE = argv.pop(0) if argv[0][-3:] != '.py' else argv.pop(0)[:-3]
-
-        path.append(dirname(CONFFILE))
-        CONF = __import__(basename(CONFFILE))
-
-        DES = CONF.DES
-        BACKUP_LIST = CONF.BACKUP_LIST
-    except IndexError:
-        print('Required argument not found')
-        exit()
-    except ImportError:
-        print('Import configuration file error')
-        exit()
-    except AttributeError:
-        print('Configuration file is incorrect')
-        exit()
-
     if geteuid() != 0:
         print('Non root user')
+        exit()
+
+    del argv[0]
+    try:
+        DES, BACKUP_LIST = getconf(argv.pop(0))
+    except IndexError:
+        print('Required argument not found')
         exit()
 
     for arglist in BACKUP_LIST:
