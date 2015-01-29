@@ -24,7 +24,7 @@ from sys import argv, path
 
 
 __NAME__ = basename(argv[0])
-__VERSION__ = '0.3.0'
+__VERSION__ = '0.3.1'
 
 
 def getconf(conffile):
@@ -86,7 +86,7 @@ class BACKUP(object):
                     strftime('%Y-%m-%d %H:%M:%S', localtime())), 'w')
             logfile.write(self.totaltime)
             logfile.close()
-        except FileNotFoundError:
+        except (FileNotFoundError, PermissionError):
             pass
 
     bk_ori_dir = property(fset=set_ori_dir)
@@ -114,7 +114,10 @@ if __name__ == '__main__':
             if arglist['enabled']:
                 for key in ('ori_dir', 'des_dir', 'include', 'exclude', 'options'):
                     setattr(backup, 'bk_'+key, arglist[key])
-        except KeyError as e:
-            print('%s in config file is incorrect' % e)
+        except KeyError as error:
+            print('%s in config file is incorrect' % error)
             exit()
-        backup.run()
+        try:
+            backup.run()
+        except KeyboardInterrupt:
+            exit()
