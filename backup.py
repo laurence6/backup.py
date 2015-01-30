@@ -24,18 +24,19 @@ from sys import argv, path
 
 
 __NAME__ = basename(argv[0])
-__VERSION__ = '0.4.0'
+__VERSION__ = '0.4.1'
 
 
 def getconf(conffile):
     try:
         conffile = conffile if conffile[-3:] != '.py' else conffile[:-3]
 
+        path.clear()
         path.append(dirname(conffile))
         conf = __import__(basename(conffile))
 
         backup_list = conf.BACKUP_LIST
-    except (ImportError, ValueError):
+    except (ImportError, NameError, ValueError):
         print('Import configuration file error')
         exit()
     except AttributeError:
@@ -84,9 +85,10 @@ class BACKUP(object):
             logfile = open('%s/%s' % (self.des_dir,\
                     strftime('%Y-%m-%d %H:%M:%S', localtime())), 'w')
             logfile.write(self.totaltime)
-            logfile.close()
         except (FileNotFoundError, PermissionError):
             pass
+        finally:
+            logfile.close()
 
     bk_ori_dir = property(fset=set_ori_dir)
     bk_des_dir = property(fset=set_des_dir)
@@ -123,6 +125,7 @@ def main():
             backup.run()
         except KeyboardInterrupt:
             exit()
+
 
 if __name__ == '__main__':
     main()
