@@ -1,9 +1,8 @@
-DES = '/mnt/Backup/'
 BACKUP_LIST = [
                {
                    'enabled': True,
                    'ori_dir': '/',
-                   'des_dir': 'root',
+                   'des_dir': '/mnt/Backup/root',
                    'include': [],
                    'exclude': [
                        'lost+found',
@@ -22,7 +21,7 @@ BACKUP_LIST = [
                {
                    'enabled': True,
                    'ori_dir': '/home/',
-                   'des_dir': 'home',
+                   'des_dir': '/mnt/Backup/home',
                    'include': [],
                    'exclude': [
                        'lost+found',

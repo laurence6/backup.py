@@ -24,7 +24,7 @@ from sys import argv, path
 
 
 __NAME__ = basename(argv[0])
-__VERSION__ = '0.3.1'
+__VERSION__ = '0.4.0'
 
 
 def getconf(conffile):
@@ -34,7 +34,6 @@ def getconf(conffile):
         path.append(dirname(conffile))
         conf = __import__(basename(conffile))
 
-        des = conf.DES
         backup_list = conf.BACKUP_LIST
     except (ImportError, ValueError):
         print('Import configuration file error')
@@ -42,7 +41,7 @@ def getconf(conffile):
     except AttributeError:
         print('Configuration file is incorrect')
         exit()
-    return des, backup_list
+    return backup_list
 
 
 class BACKUP(object):
@@ -53,7 +52,7 @@ class BACKUP(object):
         self.ori_dir = arg if arg[-1] == '/' else arg+'/'
 
     def set_des_dir(self, arg):
-        self.des_dir = DES+arg
+        self.des_dir = arg
 
     def set_include(self, arg):
         self.include = ' '.join(['--include="%s"' % x for x in arg])
@@ -96,28 +95,34 @@ class BACKUP(object):
     bk_options = property(fset=set_options)
 
 
-if __name__ == '__main__':
+def main():
     if geteuid() != 0:
         print('Non root user')
         exit()
 
     del argv[0]
     try:
-        DES, BACKUP_LIST = getconf(argv.pop(0))
+        backup_list = getconf(argv.pop(0))
     except IndexError:
         print('Required argument not found')
         exit()
 
-    for arglist in BACKUP_LIST:
+    for arglist in backup_list:
         backup = BACKUP()
         try:
             if arglist['enabled']:
                 for key in ('ori_dir', 'des_dir', 'include', 'exclude', 'options'):
                     setattr(backup, 'bk_'+key, arglist[key])
         except KeyError as error:
-            print('%s in config file is incorrect' % error)
+            print('%s in configuration file is incorrect' % error)
+            exit()
+        except IndexError:
+            print('Configuration file is incorrect')
             exit()
         try:
             backup.run()
         except KeyboardInterrupt:
             exit()
+
+if __name__ == '__main__':
+    main()
