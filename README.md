@@ -1,16 +1,14 @@
 pybackup
-======
+========
 
-A backup script written in python.
+A backup script written in python3.
 
 A simple encapsulation of rsync on linux.
 
 
-## Useage
+## Usage
 
-`./backup.py config`
-or
-`./backup.py config.py`
+`./backup.py config` or `./backup.py config.py`
 
 
 ## License
