@@ -23,8 +23,8 @@ from os.path import basename, dirname
 from sys import argv, path
 
 
-__NAME__ = basename(argv[0])
-__VERSION__ = '0.4.1'
+__NAME__ = basename(argv.pop(0))
+__VERSION__ = '0.4.2'
 
 
 def getconf(conffile):
@@ -32,7 +32,7 @@ def getconf(conffile):
         conffile = conffile if conffile[-3:] != '.py' else conffile[:-3]
 
         path.clear()
-        path.append(dirname(conffile))
+        path.append('%s' % dirname(conffile))
         conf = __import__(basename(conffile))
 
         backup_list = conf.BACKUP_LIST
@@ -78,17 +78,14 @@ class BACKUP(object):
         self.totaltime = 'total time: %s minutes, %s seconds' %\
                 ((finish-start)//60, (finish-start)%60)
         print(self.totaltime+'\n')
-        self.log()
 
     def log(self):
         try:
-            logfile = open('%s/%s' % (self.des_dir,\
-                    strftime('%Y-%m-%d %H:%M:%S', localtime())), 'w')
-            logfile.write(self.totaltime)
+            with open('%s/%s' % (self.des_dir, strftime('%Y-%m-%d %H:%M:%S', localtime())), 'w')\
+                    as logfile:
+                logfile.write(self.totaltime)
         except (FileNotFoundError, PermissionError):
             pass
-        finally:
-            logfile.close()
 
     bk_ori_dir = property(fset=set_ori_dir)
     bk_des_dir = property(fset=set_des_dir)
@@ -102,7 +99,6 @@ def main():
         print('Non root user')
         exit()
 
-    del argv[0]
     try:
         backup_list = getconf(argv.pop(0))
     except IndexError:
@@ -112,17 +108,20 @@ def main():
     for arglist in backup_list:
         backup = BACKUP()
         try:
-            if arglist['enabled']:
-                for key in ('ori_dir', 'des_dir', 'include', 'exclude', 'options'):
-                    setattr(backup, 'bk_'+key, arglist[key])
+            if not arglist['enabled']:
+                continue
+            for key in ('ori_dir', 'des_dir', 'include', 'exclude', 'options'):
+                setattr(backup, 'bk_'+key, arglist[key])
         except KeyError as error:
             print('%s in configuration file is incorrect' % error)
             exit()
         except IndexError:
             print('Configuration file is incorrect')
             exit()
+
         try:
             backup.run()
+            backup.log()
         except KeyboardInterrupt:
             exit()
 
