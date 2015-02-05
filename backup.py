@@ -16,15 +16,47 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from subprocess import call
-from time import localtime, strftime, time
+import getopt
 from os import geteuid
 from os.path import basename, dirname
-from sys import argv, path
+from sys import argv, exit, path
+from subprocess import call
+from time import localtime, strftime, time
 
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.4.2'
+__VERSION__ = '0.5.0'
+
+
+def printhelp():
+    print('''%s %s, Use rsync to backup and to restore files.
+Usage: %s [OPTIONS...] CONFIG_FILE [RSYNC_OPTIONS...]
+
+Informative output:
+    -q, --quiet                 keep quiet
+
+Backup Options:
+        --backup-opts='...'     change the default rsync options
+
+Other Options:
+    -h, --help                  display this help list
+    -V, --version               print program version
+
+
+Default rsync options: %s
+
+Written by Laurence Liu <liuxy6@gmail.com>'''\
+        % (__NAME__, __VERSION__, __NAME__, BACKUP.default_options))
+
+
+def printversion():
+    print('''%s %s
+Copyright (C) 2014-2015  Laurence Liu <liuxy6@gmail.com>
+License GPL v3: GNU GPL version 3 <http://www.gnu.org/licenses/>
+This program comes with ABSOLUTELY NO WARRANTY.
+This is free software, and you are welcome to redistribute it.
+
+Written by Laurence Liu <liuxy6@gmail.com>''' % (__NAME__, __VERSION__))
 
 
 def getconf(conffile):
@@ -33,9 +65,9 @@ def getconf(conffile):
 
         path.clear()
         path.append('%s' % dirname(conffile))
-        conf = __import__(basename(conffile))
+        conffile = __import__(basename(conffile))
 
-        backup_list = conf.BACKUP_LIST
+        backup_list = conffile.BACKUP_LIST
     except (ImportError, NameError, ValueError):
         print('Import configuration file error')
         exit()
@@ -46,32 +78,34 @@ def getconf(conffile):
 
 
 class BACKUP(object):
-    def __init__(self):
-        self.ori_dir = self.des_dir = self.include = self.exclude = self.options = self.command = self.totaltime = ''
+    default_options = '--archive --hard-links --acls --xattrs --verbose --delete --delete-excluded'
+    __ori_dir = __des_dir = __include = __exclude = __options = totaltime = ''
+
+    def __init__(self, rsync_opts):
+        self.set_options(rsync_opts)
 
     def set_ori_dir(self, arg):
-        self.ori_dir = arg if arg[-1] == '/' else arg+'/'
+        self.__ori_dir = arg if arg[-1] == '/' else arg+'/'
 
     def set_des_dir(self, arg):
-        self.des_dir = arg
+        self.__des_dir = arg
 
     def set_include(self, arg):
-        self.include = ' '.join(['--include="%s"' % x for x in arg])
+        self.__include = ' '.join(['--include="%s"' % x for x in arg])
 
     def set_exclude(self, arg):
-        self.exclude = ' '.join(['--exclude="%s"' % x for x in arg])
+        self.__exclude = ' '.join(['--exclude="%s"' % x for x in arg])
 
     def set_options(self, arg):
-        arg.extend(argv)
-        self.options = ' '.join(arg)
+        self.__options += ' '.join(arg)
 
     def run(self):
-        self.command = 'rsync -aHAXv --delete --delete-excluded %s %s %s "%s" "%s"' %\
-                (self.options, self.include, self.exclude, self.ori_dir, self.des_dir)
+        cmd = 'rsync %s %s %s %s "%s" "%s"' %\
+                (self.default_options, self.__options, self.__include, self.__exclude, self.__ori_dir, self.__des_dir)
 
         start = int(time())
-        if call(self.command, shell=True, executable='/bin/bash'):
-            print('Something went wrong... The bash command:'+'\n'+self.command+'\n')
+        if call(cmd, shell=True, executable='/bin/bash'):
+            print('Something went wrong... The bash command:'+'\n'+cmd+'\n')
             return
         finish = int(time())
 
@@ -81,37 +115,54 @@ class BACKUP(object):
 
     def log(self):
         try:
-            with open('%s/%s' % (self.des_dir, strftime('%Y-%m-%d %H:%M:%S', localtime())), 'w')\
+            with open('%s/%s' % (self.__des_dir, strftime('%Y-%m-%d %H:%M:%S', localtime())), 'w')\
                     as logfile:
                 logfile.write(self.totaltime)
         except (FileNotFoundError, PermissionError):
             pass
 
-    bk_ori_dir = property(fset=set_ori_dir)
-    bk_des_dir = property(fset=set_des_dir)
-    bk_include = property(fset=set_include)
-    bk_exclude = property(fset=set_exclude)
-    bk_options = property(fset=set_options)
+    ori_dir = property(fset=set_ori_dir)
+    des_dir = property(fset=set_des_dir)
+    include = property(fset=set_include)
+    exclude = property(fset=set_exclude)
+    options = property(fset=set_options)
 
 
 def main():
+    try:
+        opts, args = getopt.getopt(argv, 'q hV', ['quiet', 'backup-opts=', 'help', 'version'])
+    except getopt.GetoptError as error:
+        print(error)
+        exit()
+    for o, a in opts:
+        if o in ('-q', '--quiet'):
+            BACKUP.default_options = BACKUP.default_options.replace('--verbose', '')
+        elif o in ('--backup-opts',):
+            BACKUP.default_options = a
+        elif o in ('-h', '--help'):
+            printhelp()
+            exit()
+        elif o in ('-V', '--version'):
+            printversion()
+            exit()
+
     if geteuid() != 0:
         print('Non root user')
         exit()
 
     try:
-        backup_list = getconf(argv.pop(0))
+        backup_list = getconf(args.pop(0))
     except IndexError:
         print('Required argument not found')
         exit()
 
     for arglist in backup_list:
-        backup = BACKUP()
+        backup = BACKUP(args)
         try:
             if not arglist['enabled']:
                 continue
             for key in ('ori_dir', 'des_dir', 'include', 'exclude', 'options'):
-                setattr(backup, 'bk_'+key, arglist[key])
+                setattr(backup, key, arglist[key])
         except KeyError as error:
             print('%s in configuration file is incorrect' % error)
             exit()
