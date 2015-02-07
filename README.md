@@ -8,7 +8,22 @@ A simple encapsulation of rsync on linux.
 
 ## Usage
 
-`./backup.py config` or `./backup.py config.py`
+<pre>
+backup.py [OPTIONS...] CONFIG_FILE [RSYNC_OPTIONS...]
+
+Informative output:
+    -q, --quiet                 keep quiet
+
+Backup Options:
+        --backup-opts='...'     change the default rsync options
+
+Other Options:
+    -h, --help                  display this help list
+    -V, --version               print program version
+
+
+Default rsync options: --archive --hard-links --acls --xattrs --verbose --delete --delete-excluded
+</pre>
 
 
 ## License
