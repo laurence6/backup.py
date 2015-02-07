@@ -25,43 +25,43 @@ from time import localtime, strftime, time
 
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.5.0'
+__VERSION__ = '0.5.1'
 
 
 def printhelp():
-    print('''%s %s, Use rsync to backup and to restore files.
-Usage: %s [OPTIONS...] CONFIG_FILE [RSYNC_OPTIONS...]
-
-Informative output:
-    -q, --quiet                 keep quiet
-
-Backup Options:
-        --backup-opts='...'     change the default rsync options
-
-Other Options:
-    -h, --help                  display this help list
-    -V, --version               print program version
-
-
-Default rsync options: %s
-
-Written by Laurence Liu <liuxy6@gmail.com>'''\
-        % (__NAME__, __VERSION__, __NAME__, BACKUP.default_options))
+    print('%s %s, Use rsync to backup and to restore files.\n'
+          'Usage: %s [OPTIONS...] CONFIG_FILE [RSYNC_OPTIONS...]\n'
+          '\n'
+          'Informative output:\n'
+          '    -q, --quiet                 keep quiet\n'
+          '\n'
+          'Backup Options:\n'
+          '        --backup-opts="..."     change the default rsync options\n'
+          '\n'
+          'Other Options:\n'
+          '    -h, --help                  display this help list\n'
+          '    -V, --version               print program version\n'
+          '\n'
+          '\n'
+          'Default rsync options: %s\n'
+          '\n'
+          'Written by Laurence Liu <liuxy6@gmail.com>'\
+                  % (__NAME__, __VERSION__, __NAME__, BACKUP.default_options))
 
 
 def printversion():
-    print('''%s %s
-Copyright (C) 2014-2015  Laurence Liu <liuxy6@gmail.com>
-License GPL v3: GNU GPL version 3 <http://www.gnu.org/licenses/>
-This program comes with ABSOLUTELY NO WARRANTY.
-This is free software, and you are welcome to redistribute it.
-
-Written by Laurence Liu <liuxy6@gmail.com>''' % (__NAME__, __VERSION__))
+    print('%s %s\n'
+          'Copyright (C) 2014-2015  Laurence Liu <liuxy6@gmail.com>\n'
+          'License GPL v3: GNU GPL version 3 <http://www.gnu.org/licenses/>\n'
+          'This program comes with ABSOLUTELY NO WARRANTY.\n'
+          'This is free software, and you are welcome to redistribute it.\n'
+          '\n'
+          'Written by Laurence Liu <liuxy6@gmail.com>' % (__NAME__, __VERSION__))
 
 
 def getconf(conffile):
     try:
-        conffile = conffile if conffile[-3:] != '.py' else conffile[:-3]
+        conffile = conffile[:-3] if conffile[-3:] == '.py' else conffile
 
         path.clear()
         path.append('%s' % dirname(conffile))
@@ -79,7 +79,7 @@ def getconf(conffile):
 
 class BACKUP(object):
     default_options = '--archive --hard-links --acls --xattrs --verbose --delete --delete-excluded'
-    __ori_dir = __des_dir = __include = __exclude = __options = totaltime = ''
+    __ori_dir = __des_dir = __include = __exclude = __options = __totaltime = ''
 
     def __init__(self, rsync_opts):
         self.set_options(rsync_opts)
@@ -109,15 +109,15 @@ class BACKUP(object):
             return
         finish = int(time())
 
-        self.totaltime = 'total time: %s minutes, %s seconds' %\
+        self.__totaltime = 'total time: %s minutes, %s seconds' %\
                 ((finish-start)//60, (finish-start)%60)
-        print(self.totaltime+'\n')
+        print(self.__totaltime+'\n')
 
     def log(self):
         try:
             with open('%s/%s' % (self.__des_dir, strftime('%Y-%m-%d %H:%M:%S', localtime())), 'w')\
                     as logfile:
-                logfile.write(self.totaltime)
+                logfile.write(self.__totaltime)
         except (FileNotFoundError, PermissionError):
             pass
 
