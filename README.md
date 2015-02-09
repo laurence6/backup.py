@@ -8,22 +8,82 @@ A simple encapsulation of rsync on linux.
 
 ## Usage
 
-<pre>
-backup.py [OPTIONS...] CONFIG_FILE [RSYNC_OPTIONS...]
+    backup.py [OPTIONS...] CONFIG_FILE [RSYNC_OPTIONS...]
 
-Informative output:
-    -q, --quiet                 keep quiet
+    Informative output:
+        -q, --quiet                 keep quiet
 
-Backup Options:
-        --backup-opts='...'     change the default rsync options
+    Backup Options:
+            --backup-opts='...'     change the default rsync options
 
-Other Options:
-    -h, --help                  display this help list
-    -V, --version               print program version
+    Other Options:
+        -h, --help                  display this help list
+        -V, --version               print program version
 
 
-Default rsync options: --archive --hard-links --acls --xattrs --verbose --delete --delete-excluded
-</pre>
+    Default rsync options: --archive --hard-links --acls --xattrs --verbose --delete --delete-excluded
+
+
+## Configuration
+
+Configuration file of this program is a python module. You can have different configuration files and you need to specify one configuration file when you run this program.
+
+The configuration file must contain a list named 'BACKUP_LIST' and you can put some items which represtent folders you want to backup into it. Each item must be a dictionary which include five keys: 'enabled', 'ori_dir', 'des_dir', 'include', 'exclude', 'options'.
+
+
+## Example
+
+### Configuration file:
+/root/config.py
+```python
+BACKUP_LIST = [
+                  {
+                      'enabled': True,      # Set False if you don't want to backup this folder
+                      'ori_dir': '/',
+                      'des_dir': '/mnt/Backup/root',
+                      'include': [
+                          '/home/user/',
+                      ],
+                      'exclude': [
+                          'lost+found',
+                          '/dev/*',
+                          '/proc/*',
+                          '/sys/*',
+                          '/tmp/*',
+                          '/run/*',
+                          '/mnt/*',
+                          '/media/*',
+                          '/var/tmp/*',
+                          '/home/*',
+                      ],
+                      'options': [
+                          '--log-file=/mnt/root-log',
+                      ],                    # Some additional options for rsync
+                  },
+                  {
+                      'enabled': True,
+                      'ori_dir': '/home/',
+                      'des_dir': '/mnt/Backup/home',
+                      'include': [],
+                      'exclude': [
+                          'lost+found',
+                          '*cache*',
+                          '*Cache*',
+                          '*.log*',
+                          '*.old',
+                          '*tmp*',
+                      ],
+                      'options': [
+                          '--log-file=/mnt/home-log',
+                      ],
+                  },
+              ]
+```
+
+### Command:
+    # backup.py /root/config.py
+or if you want the quiet:
+    # backup.py --quiet /root/config.py
 
 
 ## License

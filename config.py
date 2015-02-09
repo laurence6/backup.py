@@ -3,7 +3,9 @@ BACKUP_LIST = [
                       'enabled': True,
                       'ori_dir': '/',
                       'des_dir': '/mnt/Backup/root',
-                      'include': [],
+                      'include': [
+                          '/home/user/',
+                      ],
                       'exclude': [
                           'lost+found',
                           '/dev/*',
@@ -16,7 +18,9 @@ BACKUP_LIST = [
                           '/var/tmp/*',
                           '/home/*',
                       ],
-                      'options': [],
+                      'options': [
+                          '--log-file=/mnt/root-log',
+                      ],
                   },
                   {
                       'enabled': True,
@@ -31,6 +35,8 @@ BACKUP_LIST = [
                           '*.old',
                           '*tmp*',
                       ],
-                      'options': [],
+                      'options': [
+                          '--log-file=/mnt/home-log',
+                      ],
                   },
               ]
