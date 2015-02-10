@@ -1,4 +1,4 @@
-BACKUP_LIST = [
+CONFIG_LIST = [
                   {
                       'enabled': True,
                       'ori_dir': '/',

@@ -25,7 +25,7 @@ from time import localtime, strftime, time
 
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.5.1'
+__VERSION__ = '0.5.2'
 
 
 def printhelp():
@@ -67,14 +67,14 @@ def getconf(conffile):
         path.append('%s' % dirname(conffile))
         conffile = __import__(basename(conffile))
 
-        backup_list = conffile.BACKUP_LIST
+        config_list = conffile.CONFIG_LIST
     except (ImportError, NameError, ValueError):
         print('Import configuration file error')
         exit()
     except AttributeError:
         print('Configuration file is incorrect')
         exit()
-    return backup_list
+    return config_list
 
 
 class BACKUP(object):
@@ -151,12 +151,12 @@ def main():
         exit()
 
     try:
-        backup_list = getconf(args.pop(0))
+        config_list = getconf(args.pop(0))
     except IndexError:
         print('Required argument not found')
         exit()
 
-    for arglist in backup_list:
+    for arglist in config_list:
         backup = BACKUP(args)
         try:
             if not arglist['enabled']:
