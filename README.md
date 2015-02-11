@@ -1,12 +1,11 @@
-pybackup
-========
+# pybackup 0.5.2
 
 A backup script written in python3.
 
 A simple encapsulation of rsync on linux.
 
 
-## Usage
+# Usage
 
     backup.py [OPTIONS...] CONFIG_FILE [RSYNC_OPTIONS...]
 
@@ -24,17 +23,19 @@ A simple encapsulation of rsync on linux.
     Default rsync options: --archive --hard-links --acls --xattrs --verbose --delete --delete-excluded
 
 
-## Configuration
+# Configuration
 
 Configuration file of this program is a python module. You can have different configuration files and you need to specify one configuration file when you run this program.
 
 The configuration file must contain a list named 'CONFIG_LIST' and you can put some items which represtent folders you want to backup into it. Each item must be a dictionary which include five keys: 'enabled', 'ori_dir', 'des_dir', 'include', 'exclude', 'options'.
 
 
-## Example
+# Example
 
 ### Configuration file:
+
 /root/config.py
+
 ```python
 CONFIG_LIST = [
                   {
@@ -81,12 +82,15 @@ CONFIG_LIST = [
 ```
 
 ### Command:
+
     # backup.py /root/config.py
+
 or if you want the quiet:
+
     # backup.py --quiet /root/config.py
 
 
-## License
+# License
 
 Copyright (C) 2014-2015  Laurence Liu <liuxy6@gmail.com>
 
