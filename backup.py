@@ -25,7 +25,7 @@ from time import localtime, strftime, time
 
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.5.2'
+__VERSION__ = '0.5.3'
 
 
 def printhelp():
@@ -37,6 +37,7 @@ def printhelp():
           '\n'
           'Backup Options:\n'
           '        --backup-opts="..."     change the default rsync options\n'
+          '    -n, --show-cmd              print rsync command and exit\n'
           '\n'
           'Other Options:\n'
           '    -h, --help                  display this help list\n'
@@ -99,13 +100,18 @@ class BACKUP(object):
     def set_options(self, arg):
         self.__options += ' '.join(arg)
 
-    def run(self):
-        cmd = 'rsync %s %s %s %s "%s" "%s"' %\
+    def get_cmd(self):
+        return 'rsync %s %s %s %s "%s" "%s"' %\
                 (self.default_options, self.__options, self.__include, self.__exclude, self.__ori_dir, self.__des_dir)
 
+    def run(self):
+        if geteuid() != 0:
+            print('Non root user')
+            exit()
+
         start = int(time())
-        if call(cmd, shell=True, executable='/bin/bash'):
-            print('Something went wrong... The bash command:'+'\n'+cmd+'\n')
+        if call(self.cmd, shell=True, executable='/bin/bash'):
+            print('Something went wrong... The bash command:'+'\n'+self.cmd+'\n')
             return
         finish = int(time())
 
@@ -126,17 +132,22 @@ class BACKUP(object):
     include = property(fset=set_include)
     exclude = property(fset=set_exclude)
     options = property(fset=set_options)
+    cmd = property(get_cmd)
 
 
 def main():
+    show_cmd = False
+
     try:
-        opts, args = getopt.getopt(argv, 'q hV', ['quiet', 'backup-opts=', 'help', 'version'])
+        opts, args = getopt.getopt(argv, 'q nhV', ['quiet', 'backup-opts=', 'show-command', 'help', 'version'])
     except getopt.GetoptError as error:
         print(error)
         exit()
     for o, a in opts:
         if o in ('-q', '--quiet'):
             BACKUP.default_options = BACKUP.default_options.replace('--verbose', '')
+        elif o in ('-n', '--show-cmd'):
+            show_cmd = True
         elif o in ('--backup-opts',):
             BACKUP.default_options = a
         elif o in ('-h', '--help'):
@@ -146,14 +157,11 @@ def main():
             printversion()
             exit()
 
-    if geteuid() != 0:
-        print('Non root user')
-        exit()
-
     try:
         config_list = getconf(args.pop(0))
     except IndexError:
         print('Required argument not found')
+        printhelp()
         exit()
 
     for arglist in config_list:
@@ -166,16 +174,16 @@ def main():
         except KeyError as error:
             print('%s in configuration file is incorrect' % error)
             exit()
-        except IndexError:
-            print('Configuration file is incorrect')
-            exit()
 
-        try:
+        if show_cmd:
+            print(backup.cmd)
+        else:
             backup.run()
             backup.log()
-        except KeyboardInterrupt:
-            exit()
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        exit()
