@@ -1,4 +1,4 @@
-# pybackup 0.5.2
+# pybackup 0.5.3
 
 A backup script written in python3.
 
@@ -13,7 +13,8 @@ A simple encapsulation of rsync on linux.
         -q, --quiet                 keep quiet
 
     Backup Options:
-            --backup-opts='...'     change the default rsync options
+            --backup-opts="..."     change the default rsync options
+        -n, --show-cmd              print rsync command and exit
 
     Other Options:
         -h, --help                  display this help list
