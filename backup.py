@@ -17,7 +17,6 @@
 #
 
 import getopt
-from os import geteuid
 from os.path import basename, dirname
 from sys import argv, exit, path
 from subprocess import call
@@ -25,7 +24,7 @@ from time import localtime, strftime, time
 
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.5.3'
+__VERSION__ = '0.5.4'
 
 
 def printhelp():
@@ -105,10 +104,6 @@ class BACKUP(object):
                 (self.default_options, self.__options, self.__include, self.__exclude, self.__ori_dir, self.__des_dir)
 
     def run(self):
-        if geteuid() != 0:
-            print('Non root user')
-            exit()
-
         start = int(time())
         if call(self.cmd, shell=True, executable='/bin/bash'):
             print('Something went wrong... The bash command:'+'\n'+self.cmd+'\n')
