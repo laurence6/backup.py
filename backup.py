@@ -17,14 +17,14 @@
 #
 
 import getopt
-from os.path import basename, dirname
-from sys import argv, exit, path
+from os.path import basename
 from subprocess import call
+from sys import argv, exit
 from time import localtime, strftime, time
 
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.5.4'
+__VERSION__ = '0.5.5'
 
 
 def printhelp():
@@ -59,29 +59,27 @@ def printversion():
           'Written by Laurence Liu <liuxy6@gmail.com>' % (__NAME__, __VERSION__))
 
 
-def getconf(conffile):
+def getconf(filepath, module=type(getopt)):
     try:
-        conffile = conffile[:-3] if conffile[-3:] == '.py' else conffile
-
-        path.clear()
-        path.append('%s' % dirname(conffile))
-        conffile = __import__(basename(conffile))
-
-        config_list = conffile.CONFIG_LIST
-    except (ImportError, NameError, ValueError):
-        print('Import configuration file error')
+        conf = open(filepath).read()
+    except IOError:
+        print('Configuration not found')
         exit()
-    except AttributeError:
+    filename = basename(filepath)
+    m = module(filename)
+    try:
+        exec(compile(conf, '<string>', 'exec'), m.__dict__)
+        return m.CONFIG_LIST
+    except (AttributeError, NameError, SyntaxError):
         print('Configuration file is incorrect')
         exit()
-    return config_list
 
 
 class BACKUP(object):
     default_options = '--archive --hard-links --acls --xattrs --verbose --delete --delete-excluded'
     __ori_dir = __des_dir = __include = __exclude = __options = __totaltime = ''
 
-    def __init__(self, rsync_opts):
+    def __init__(self, rsync_opts=''):
         self.set_options(rsync_opts)
 
     def set_ori_dir(self, arg):
@@ -166,8 +164,8 @@ def main():
                 continue
             for key in ('ori_dir', 'des_dir', 'include', 'exclude', 'options'):
                 setattr(backup, key, arglist[key])
-        except KeyError as error:
-            print('%s in configuration file is incorrect' % error)
+        except (IndexError, KeyError, TypeError):
+            print('Configuration file is incorrect')
             exit()
 
         if show_cmd:

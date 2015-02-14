@@ -1,4 +1,4 @@
-# pybackup 0.5.4
+# pybackup 0.5.5
 
 A backup script written in python3.
 
@@ -26,16 +26,16 @@ A simple encapsulation of rsync on linux.
 
 # Configuration
 
-Configuration file of this program is a python module. You can have different configuration files and you need to specify one configuration file when you run this program.
+The configuration file of this program is similar to a python module and it must comply with python syntax. You can have some different configuration files and you need to specify one when you run this program.
 
-The configuration file must contain a list named 'CONFIG_LIST' and you can put some items which represtent folders you want to backup into it. Each item must be a dictionary which include five keys: 'enabled', 'ori_dir', 'des_dir', 'include', 'exclude', 'options'.
+The configuration file must contain a list named 'CONFIG_LIST' and you can put some items which represtent folders you want to backup into it. Each item must be a dictionary which include five items: 'enabled', 'ori_dir', 'des_dir', 'include', 'exclude', 'options'.
 
 
 # Example
 
 ### Configuration file:
 
-/root/config.py
+/root/demo.conf
 
 ```python
 CONFIG_LIST = [
@@ -84,11 +84,11 @@ CONFIG_LIST = [
 
 ### Command:
 
-    # backup.py /root/config.py
+    # backup.py /root/demo.conf
 
 or if you want the quiet:
 
-    # backup.py --quiet /root/config.py
+    # backup.py --quiet /root/demo.conf
 
 
 # License
