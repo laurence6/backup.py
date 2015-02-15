@@ -17,14 +17,18 @@
 #
 
 import getopt
+import logging
 from os.path import basename
 from subprocess import call
 from sys import argv, exit
-from time import localtime, strftime, time
+from time import time
 
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.5.5'
+__VERSION__ = '0.5.6'
+
+logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+logger = logging.getLogger()
 
 
 def printhelp():
@@ -33,13 +37,14 @@ def printhelp():
           '\n'
           'Informative output:\n'
           '    -q, --quiet                 keep quiet\n'
+          '    -v, --verbose               increase verbosity\n'
           '\n'
           'Backup Options:\n'
           '        --backup-opts="..."     change the default rsync options\n'
           '    -n, --show-cmd              print rsync command and exit\n'
           '\n'
           'Other Options:\n'
-          '    -h, --help                  display this help list\n'
+          '    -h, --help                  print this help list\n'
           '    -V, --version               print program version\n'
           '\n'
           '\n'
@@ -62,22 +67,23 @@ def printversion():
 def getconf(filepath, module=type(getopt)):
     try:
         conf = open(filepath).read()
+        logger.debug('Configuration file: %s' % filepath)
     except IOError:
-        print('Configuration not found')
+        logger.critical('Cannot read configuration file "%s"' % filepath)
         exit()
-    filename = basename(filepath)
-    m = module(filename)
+    m = module(basename(filepath))
     try:
         exec(compile(conf, '<string>', 'exec'), m.__dict__)
+        logger.debug('Config list: %s' % m.CONFIG_LIST)
         return m.CONFIG_LIST
     except (AttributeError, NameError, SyntaxError):
-        print('Configuration file is incorrect')
+        logger.critical('Configuration file is incorrect')
         exit()
 
 
 class BACKUP(object):
-    default_options = '--archive --hard-links --acls --xattrs --verbose --delete --delete-excluded'
-    __ori_dir = __des_dir = __include = __exclude = __options = __totaltime = ''
+    default_options = '--verbose --archive --hard-links --acls --xattrs --delete --delete-excluded'
+    __ori_dir = __des_dir = __include = __exclude = __options = ''
 
     def __init__(self, rsync_opts=''):
         self.set_options(rsync_opts)
@@ -99,26 +105,24 @@ class BACKUP(object):
 
     def get_cmd(self):
         return 'rsync %s %s %s %s "%s" "%s"' %\
-                (self.default_options, self.__options, self.__include, self.__exclude, self.__ori_dir, self.__des_dir)
+                (self.default_options,\
+                        self.__options,\
+                        self.__include,\
+                        self.__exclude,\
+                        self.__ori_dir,\
+                        self.__des_dir)
 
     def run(self):
         start = int(time())
+        logger.debug('Bash command: %s' % self.cmd)
         if call(self.cmd, shell=True, executable='/bin/bash'):
-            print('Something went wrong... The bash command:'+'\n'+self.cmd+'\n')
+            logger.error('Something went wrong when executing bash command: %s\n' % self.cmd)
             return
         finish = int(time())
 
-        self.__totaltime = 'total time: %s minutes, %s seconds' %\
+        totaltime = '%s minutes, %s seconds' %\
                 ((finish-start)//60, (finish-start)%60)
-        print(self.__totaltime+'\n')
-
-    def log(self):
-        try:
-            with open('%s/%s' % (self.__des_dir, strftime('%Y-%m-%d %H:%M:%S', localtime())), 'w')\
-                    as logfile:
-                logfile.write(self.__totaltime)
-        except (FileNotFoundError, PermissionError):
-            pass
+        logger.info('Total time: %s\n' % totaltime)
 
     ori_dir = property(fset=set_ori_dir)
     des_dir = property(fset=set_des_dir)
@@ -132,17 +136,23 @@ def main():
     show_cmd = False
 
     try:
-        opts, args = getopt.getopt(argv, 'q nhV', ['quiet', 'backup-opts=', 'show-command', 'help', 'version'])
+        opts, args = getopt.getopt(argv, 'qv nhV',\
+                ['quiet', 'verbose', 'backup-opts=', 'show-command', 'help', 'version'])
     except getopt.GetoptError as error:
-        print(error)
+        logger.critical(error)
         exit()
     for o, a in opts:
         if o in ('-q', '--quiet'):
+            logger.setLevel(logger.level+10)
             BACKUP.default_options = BACKUP.default_options.replace('--verbose', '')
+        elif o in ('-v', '--verbose'):
+            logger.setLevel(logger.level-10)
+            BACKUP.default_options = BACKUP.default_options + ' --verbose'
         elif o in ('-n', '--show-cmd'):
             show_cmd = True
         elif o in ('--backup-opts',):
             BACKUP.default_options = a
+            logger.debug('Set default options: %s' % a)
         elif o in ('-h', '--help'):
             printhelp()
             exit()
@@ -153,30 +163,33 @@ def main():
     try:
         config_list = getconf(args.pop(0))
     except IndexError:
-        print('Required argument not found')
+        logger.critical('Required argument not found')
         printhelp()
         exit()
 
     for arglist in config_list:
+        logger.debug('Arglist: %s' % arglist)
         backup = BACKUP(args)
         try:
             if not arglist['enabled']:
+                logger.debug('Arglist %s disabled, skipped' % arglist)
                 continue
             for key in ('ori_dir', 'des_dir', 'include', 'exclude', 'options'):
+                logger.debug('Set %s as %s' % (key, arglist[key]))
                 setattr(backup, key, arglist[key])
         except (IndexError, KeyError, TypeError):
-            print('Configuration file is incorrect')
+            logger.critical('Configuration file is incorrect')
             exit()
 
         if show_cmd:
             print(backup.cmd)
         else:
             backup.run()
-            backup.log()
 
 
 if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
+        logger.info('Receive the keyboard interrupt, exit')
         exit()
