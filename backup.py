@@ -25,7 +25,7 @@ from time import time
 
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.5.6'
+__VERSION__ = '0.5.7'
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 logger = logging.getLogger()
@@ -101,7 +101,7 @@ class BACKUP(object):
         self.__exclude = ' '.join(['--exclude="%s"' % x for x in arg])
 
     def set_options(self, arg):
-        self.__options += ' '.join(arg)
+        self.__options += ' '+' '.join(arg)
 
     def get_cmd(self):
         return 'rsync %s %s %s %s "%s" "%s"' %\
