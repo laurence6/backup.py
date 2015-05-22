@@ -1,4 +1,4 @@
-# pybackup 0.5.6
+# pybackup 0.6.0
 
 A backup script written in python3.
 
@@ -7,21 +7,24 @@ A simple encapsulation of rsync on linux.
 
 # Usage
 
-    backup.py [OPTIONS...] CONFIG_FILE [RSYNC_OPTIONS...]
+    Usage: backup.py [OPTIONS...] CONFIG_FILE [ADDITIONAL_RSYNC_OPTIONS...]
 
-    Informative output:
-        -q, --quiet                 keep quiet
+    OPTIONS:
 
-    Backup Options:
-            --backup-opts="..."     change the default rsync options
-        -n, --show-cmd              print rsync command and exit
+      Informative Output:
+          -q, --quiet                 keep quiet
+          -v, --verbose               increase verbosity
 
-    Other Options:
-        -h, --help                  display this help list
-        -V, --version               print program version
+      Backup Options:
+              --rsnyc-opts="..."      replace the default rsync options
+          -n, --show-cmd              print rsync command and exit
+
+      Other Options:
+          -h, --help                  print this help list
+          -V, --version               print program version
 
 
-    Default rsync options: --archive --hard-links --acls --xattrs --verbose --delete --delete-excluded
+    Default rsync options: --verbose --archive --hard-links --acls --xattrs --delete --delete-excluded
 
 
 # Configuration
@@ -38,48 +41,46 @@ The configuration file must contain a list named 'CONFIG_LIST' and you can put s
 /root/demo.conf
 
 ```python
-CONFIG_LIST = [
-                  {
-                      'enabled': True,      # Set False if you don't want to backup this folder
-                      'ori_dir': '/',
-                      'des_dir': '/mnt/Backup/root',
-                      'include': [
-                          '/home/user/',
-                      ],
-                      'exclude': [
-                          'lost+found',
-                          '/dev/*',
-                          '/proc/*',
-                          '/sys/*',
-                          '/tmp/*',
-                          '/run/*',
-                          '/mnt/*',
-                          '/media/*',
-                          '/var/tmp/*',
-                          '/home/*',
-                      ],
-                      'options': [
-                          '--log-file=/mnt/root-log',
-                      ],                    # Some additional options for rsync
-                  },
-                  {
-                      'enabled': True,
-                      'ori_dir': '/home/',
-                      'des_dir': '/mnt/Backup/home',
-                      'include': [],
-                      'exclude': [
-                          'lost+found',
-                          '*cache*',
-                          '*Cache*',
-                          '*.log*',
-                          '*.old',
-                          '*tmp*',
-                      ],
-                      'options': [
-                          '--log-file=/mnt/home-log',
-                      ],
-                  },
-              ]
+CONFIG_ROOT = {
+                  'enabled': True,               # Required. Set False if you don't want to backup this folder
+                  'ori_dir': '/',                # Required. Original directory
+                  'des_dir': '/mnt/Backup/root', # Required. Destination directory
+                  'include': [
+                      '/home/user/',
+                  ],                             # Optional. Do NOT exclude these files
+                  'exclude': [
+                      'lost+found',
+                      '/dev/*',
+                      '/proc/*',
+                      '/sys/*',
+                      '/tmp/*',
+                      '/run/*',
+                      '/mnt/*',
+                      '/media/*',
+                      '/var/tmp/*',
+                      '/home/*',
+                  ],                             # Optional. Exclude these files
+                  'addoptions': [
+                      '--log-file=/mnt/root-log',
+                  ],                             # Optional. Some additional options for rsync
+              }
+CONFIG_HOME = {
+                  'enabled': True,
+                  'ori_dir': '/home/',
+                  'des_dir': '/mnt/Backup/home',
+                  'include': [],
+                  'exclude': [
+                      'lost+found',
+                      '*cache*',
+                      '*Cache*',
+                      '*.log*',
+                      '*.old',
+                      '*tmp*',
+                  ],
+                  'addoptions': [
+                      '--log-file=/mnt/home-log',
+                  ],
+              }
 ```
 
 ### Command:

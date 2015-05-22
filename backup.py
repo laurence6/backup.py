@@ -25,7 +25,7 @@ from time import time
 
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.5.7'
+__VERSION__ = '0.6.0'
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 logger = logging.getLogger()
@@ -33,21 +33,22 @@ logger = logging.getLogger()
 
 def printhelp():
     print('%s %s, Use rsync to backup and to restore files.\n'
-          'Usage: %s [OPTIONS...] CONFIG_FILE [RSYNC_OPTIONS...]\n'
+          'Usage: %s [OPTIONS...] CONFIG_FILE [ADDITIONAL_RSYNC_OPTIONS...]\n'
           '\n'
-          'Informative output:\n'
-          '    -q, --quiet                 keep quiet\n'
-          '    -v, --verbose               increase verbosity\n'
+          'OPTIONS:\n'
           '\n'
-          'Backup Options:\n'
-          '        --backup-opts="..."     change the default rsync options\n'
-          '    -n, --show-cmd              print rsync command and exit\n'
+          '  Informative Output:\n'
+          '      -q, --quiet                 keep quiet\n'
+          '      -v, --verbose               increase verbosity\n'
           '\n'
-          'Other Options:\n'
-          '    -h, --help                  print this help list\n'
-          '    -V, --version               print program version\n'
+          '  Backup Options:\n'
+          '          --rsnyc-opts="..."      replace the default rsync options\n'
+          '      -n, --show-cmd              print rsync command and exit\n'
           '\n'
-          '\n'
+          '  Other Options:\n'
+          '      -h, --help                  print this help list\n'
+          '      -V, --version               print program version\n'
+          '\n\n'
           'Default rsync options: %s\n'
           '\n'
           'Written by Laurence Liu <liuxy6@gmail.com>'\
@@ -64,19 +65,18 @@ def printversion():
           'Written by Laurence Liu <liuxy6@gmail.com>' % (__NAME__, __VERSION__))
 
 
-def getconf(filepath, module=type(getopt)):
+def getconf(filepath, config={}):
     try:
-        conf = open(filepath).read()
+        configlist = open(filepath).read()
         logger.debug('Configuration file: %s' % filepath)
     except IOError:
         logger.critical('Cannot read configuration file "%s"' % filepath)
         exit()
-    m = module(basename(filepath))
     try:
-        exec(compile(conf, '<string>', 'exec'), m.__dict__)
-        logger.debug('Config list: %s' % m.CONFIG_LIST)
-        return m.CONFIG_LIST
-    except (AttributeError, NameError, SyntaxError):
+        exec(compile(configlist, '<string>', 'exec'), globals(), config)
+        logger.debug('Config list: %s\n' % config)
+        return config
+    except:
         logger.critical('Configuration file is incorrect')
         exit()
 
@@ -86,7 +86,7 @@ class BACKUP(object):
     __ori_dir = __des_dir = __include = __exclude = __options = ''
 
     def __init__(self, rsync_opts=''):
-        self.set_options(rsync_opts)
+        self.add_options(rsync_opts)
 
     def set_ori_dir(self, arg):
         self.__ori_dir = arg if arg[-1] == '/' else arg+'/'
@@ -100,10 +100,10 @@ class BACKUP(object):
     def set_exclude(self, arg):
         self.__exclude = ' '.join(['--exclude="%s"' % x for x in arg])
 
-    def set_options(self, arg):
+    def add_options(self, arg):
         self.__options += ' '+' '.join(arg)
 
-    def get_cmd(self):
+    def gen_cmd(self):
         return 'rsync %s %s %s %s "%s" "%s"' %\
                 (self.default_options,\
                         self.__options,\
@@ -128,8 +128,8 @@ class BACKUP(object):
     des_dir = property(fset=set_des_dir)
     include = property(fset=set_include)
     exclude = property(fset=set_exclude)
-    options = property(fset=set_options)
-    cmd = property(get_cmd)
+    addoptions = property(fset=add_options)
+    cmd = property(gen_cmd)
 
 
 def main():
@@ -137,20 +137,19 @@ def main():
 
     try:
         opts, args = getopt.getopt(argv, 'qv nhV',\
-                ['quiet', 'verbose', 'backup-opts=', 'show-command', 'help', 'version'])
+                ['quiet', 'verbose', 'rsnyc-opts=', 'show-command', 'help', 'version'])
     except getopt.GetoptError as error:
         logger.critical(error)
         exit()
     for o, a in opts:
         if o in ('-q', '--quiet'):
-            logger.setLevel(logger.level+10)
+            logger.setLevel(logging.WARN)
             BACKUP.default_options = BACKUP.default_options.replace('--verbose', '')
         elif o in ('-v', '--verbose'):
-            logger.setLevel(logger.level-10)
-            BACKUP.default_options = BACKUP.default_options + ' --verbose'
+            logger.setLevel(logging.DEBUG)
         elif o in ('-n', '--show-cmd'):
             show_cmd = True
-        elif o in ('--backup-opts',):
+        elif o in ('--rsnyc-opts',):
             BACKUP.default_options = a
             logger.debug('Set default options: %s' % a)
         elif o in ('-h', '--help'):
@@ -167,14 +166,21 @@ def main():
         printhelp()
         exit()
 
-    for arglist in config_list:
-        logger.debug('Arglist: %s' % arglist)
+    for (arglistname, arglist) in config_list.items():
+        if arglistname[:6] != 'CONFIG' or type(arglist) != dict:
+            continue
+        logger.debug('Arglist: %s' % arglistname)
         backup = BACKUP(args)
         try:
             if not arglist['enabled']:
                 logger.debug('Arglist %s disabled, skipped' % arglist)
                 continue
-            for key in ('ori_dir', 'des_dir', 'include', 'exclude', 'options'):
+            for key in ('ori_dir', 'des_dir'):
+                logger.debug('Set %s as %s' % (key, arglist[key]))
+                setattr(backup, key, arglist[key])
+            for key in ('include', 'exclude', 'addoptions'):
+                if not key in arglist:
+                    continue
                 logger.debug('Set %s as %s' % (key, arglist[key]))
                 setattr(backup, key, arglist[key])
         except (IndexError, KeyError, TypeError):
