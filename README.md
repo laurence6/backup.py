@@ -1,4 +1,4 @@
-# pybackup 0.6.0
+# pybackup 0.6.1
 
 A backup script written in python3.
 
@@ -24,7 +24,7 @@ A simple encapsulation of rsync on linux.
           -V, --version               print program version
 
 
-    Default rsync options: --verbose --archive --hard-links --acls --xattrs --delete --delete-excluded
+    Default rsync options: --verbose --human-readable --archive --hard-links --acls --xattrs --numeric-ids --inplace --delete --delete-excluded
 
 
 # Configuration

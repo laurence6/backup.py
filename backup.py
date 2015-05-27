@@ -25,7 +25,7 @@ from time import time
 
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.6.0'
+__VERSION__ = '0.6.1'
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 logger = logging.getLogger()
@@ -82,7 +82,7 @@ def getconf(filepath, config={}):
 
 
 class BACKUP(object):
-    default_options = '--verbose --archive --hard-links --acls --xattrs --delete --delete-excluded'
+    default_options = '--verbose --human-readable --archive --hard-links --acls --xattrs --numeric-ids --inplace --delete --delete-excluded'
     __ori_dir = __des_dir = __include = __exclude = __options = ''
 
     def __init__(self, rsync_opts=''):
