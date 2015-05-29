@@ -1,4 +1,4 @@
-# pybackup 0.6.1
+# pybackup
 
 A backup script written in python3.
 

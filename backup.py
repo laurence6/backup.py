@@ -25,7 +25,7 @@ from time import time
 
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.6.1'
+__VERSION__ = '0.6.2'
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 logger = logging.getLogger()
@@ -137,7 +137,7 @@ def main():
 
     try:
         opts, args = getopt.getopt(argv, 'qv nhV',\
-                ['quiet', 'verbose', 'rsnyc-opts=', 'show-command', 'help', 'version'])
+                ['quiet', 'verbose', 'rsnyc-opts=', 'show-cmd', 'help', 'version'])
     except getopt.GetoptError as error:
         logger.critical(error)
         exit()
