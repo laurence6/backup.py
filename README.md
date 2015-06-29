@@ -5,6 +5,13 @@ A backup script written in python3.
 A simple encapsulation of rsync on linux.
 
 
+# Requirements
+
+* python3
+* bash
+* rsync
+
+
 # Usage
 
     Usage: backup.py [OPTIONS...] CONFIG_FILE [ADDITIONAL_RSYNC_OPTIONS...]
@@ -31,7 +38,14 @@ A simple encapsulation of rsync on linux.
 
 The configuration file of this program is similar to a python module and it must comply with python syntax. You can have some different configuration files and you need to specify one when you run this program.
 
-The configuration file must contain a list named 'CONFIG_LIST' and you can put some items which represtent folders you want to backup into it. Each item must be a dictionary which include five items: 'enabled', 'ori_dir', 'des_dir', 'include', 'exclude', 'options'.
+The configuration file must contain some dictionaries named as 'CONFIG_xxx'. One dictionary represtents one folder you want to backup. Six options can be put into the dictionary:
+
+* enabled    (Required)
+* ori_dir    (Required)
+* des_dir    (Required)
+* include    (Optional)
+* exclude    (Optional)
+* addoptions (Optional)
 
 
 # Example
