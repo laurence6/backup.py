@@ -27,9 +27,6 @@ from time import time
 __NAME__ = basename(argv.pop(0))
 __VERSION__ = '0.6.2'
 
-logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
-logger = logging.getLogger()
-
 
 def printhelp():
     print('%s %s, Use rsync to backup and to restore files.\n'
@@ -66,15 +63,16 @@ def printversion():
 
 
 def getconf(filepath, config={}):
+    logger = logging.getLogger('main.getconf')
     try:
         configlist = open(filepath).read()
-        logger.debug('Configuration file: %s' % filepath)
+        logger.debug('Configuration file: %s', filepath)
     except IOError:
-        logger.critical('Cannot read configuration file "%s"' % filepath)
+        logger.critical('Cannot read configuration file "%s"', filepath)
         exit()
     try:
         exec(compile(configlist, '<string>', 'exec'), globals(), config)
-        logger.debug('Config list: %s\n' % config)
+        logger.debug('Config list: %s\n', config)
         return config
     except:
         logger.critical('Configuration file is incorrect')
@@ -82,6 +80,7 @@ def getconf(filepath, config={}):
 
 
 class BACKUP(object):
+    logger = logging.getLogger('main.BACKUP')
     default_options = '--verbose --human-readable --archive --hard-links --acls --xattrs --numeric-ids --inplace --delete --delete-excluded'
     __ori_dir = __des_dir = __include = __exclude = __options = ''
 
@@ -114,15 +113,15 @@ class BACKUP(object):
 
     def run(self):
         start = int(time())
-        logger.debug('Bash command: %s' % self.cmd)
+        self.logger.debug('Bash command: %s', self.cmd)
         if call(self.cmd, shell=True, executable='/bin/bash'):
-            logger.error('Something went wrong when executing bash command: %s\n' % self.cmd)
+            self.logger.error('Something went wrong when executing bash command: %s\n', self.cmd)
             return
         finish = int(time())
 
         totaltime = '%s minutes, %s seconds' %\
                 ((finish-start)//60, (finish-start)%60)
-        logger.info('Total time: %s\n' % totaltime)
+        self.logger.info('Total time: %s\n', totaltime)
 
     ori_dir = property(fset=set_ori_dir)
     des_dir = property(fset=set_des_dir)
@@ -133,6 +132,7 @@ class BACKUP(object):
 
 
 def main():
+    logger = logging.getLogger('main')
     show_cmd = False
 
     try:
@@ -147,11 +147,11 @@ def main():
             BACKUP.default_options = BACKUP.default_options.replace('--verbose', '')
         elif o in ('-v', '--verbose'):
             logger.setLevel(logging.DEBUG)
-        elif o in ('-n', '--show-cmd'):
-            show_cmd = True
         elif o in ('--rsnyc-opts',):
             BACKUP.default_options = a
-            logger.debug('Set default options: %s' % a)
+            logger.debug('Set default options: %s', a)
+        elif o in ('-n', '--show-cmd'):
+            show_cmd = True
         elif o in ('-h', '--help'):
             printhelp()
             exit()
@@ -169,19 +169,19 @@ def main():
     for (arglistname, arglist) in config_list.items():
         if arglistname[:6] != 'CONFIG' or type(arglist) != dict:
             continue
-        logger.debug('Arglist: %s' % arglistname)
+        logger.debug('Arglist: %s', arglistname)
         backup = BACKUP(args)
         try:
             if not arglist['enabled']:
-                logger.debug('Arglist %s disabled, skipped' % arglist)
+                logger.debug('Arglist %s disabled, skipped', arglist)
                 continue
             for key in ('ori_dir', 'des_dir'):
-                logger.debug('Set %s as %s' % (key, arglist[key]))
+                logger.debug('Set %s as %s', key, arglist[key])
                 setattr(backup, key, arglist[key])
             for key in ('include', 'exclude', 'addoptions'):
                 if not key in arglist:
                     continue
-                logger.debug('Set %s as %s' % (key, arglist[key]))
+                logger.debug('Set %s as %s', key, arglist[key])
                 setattr(backup, key, arglist[key])
         except (IndexError, KeyError, TypeError):
             logger.critical('Configuration file is incorrect')
@@ -194,8 +194,11 @@ def main():
 
 
 if __name__ == '__main__':
+    logging.basicConfig(format='%(asctime)s [%(levelname)s] %(funcName)s: %(message)s',\
+            datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+
     try:
         main()
     except KeyboardInterrupt:
-        logger.info('Receive the keyboard interrupt, exit')
+        logging.info('Receive the keyboard interrupt, exit')
         exit()
