@@ -25,7 +25,7 @@ from time import time
 
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.6.2'
+__VERSION__ = '0.6.3'
 
 
 def printhelp():
@@ -62,7 +62,7 @@ def printversion():
           'Written by Laurence Liu <liuxy6@gmail.com>' % (__NAME__, __VERSION__))
 
 
-def getconf(filepath, config={}):
+def getconf(filepath, config=None):
     logger = logging.getLogger('main.getconf')
     try:
         configlist = open(filepath).read()
@@ -71,6 +71,7 @@ def getconf(filepath, config={}):
         logger.critical('Cannot read configuration file "%s"', filepath)
         exit()
     try:
+        config = config if not config == None else {}
         exec(compile(configlist, '<string>', 'exec'), globals(), config)
         logger.debug('Config list: %s\n', config)
         return config
@@ -194,7 +195,7 @@ def main():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(asctime)s [%(levelname)s] %(funcName)s: %(message)s',\
+    logging.basicConfig(format='[%(levelname)-5.5s] %(asctime)s %(funcName)s: %(message)s',\
             datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
     try:
