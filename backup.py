@@ -25,7 +25,7 @@ from time import time
 
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.6.3'
+__VERSION__ = '0.6.4'
 
 
 def printhelp():
@@ -83,9 +83,9 @@ def getconf(filepath, config=None):
 class BACKUP(object):
     logger = logging.getLogger('main.BACKUP')
     default_options = '--verbose --human-readable --archive --hard-links --acls --xattrs --numeric-ids --inplace --delete --delete-excluded'
-    __ori_dir = __des_dir = __include = __exclude = __options = ''
 
     def __init__(self, rsync_opts=''):
+        self.__ori_dir = self.__des_dir = self.__include = self.__exclude = self.__options = ''
         self.add_options(rsync_opts)
 
     def set_ori_dir(self, arg):
