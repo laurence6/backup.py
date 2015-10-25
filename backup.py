@@ -201,5 +201,5 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        logging.info('Receive the keyboard interrupt, exit')
+        logging.info('Keyboard interrupt received, exit')
         exit()
