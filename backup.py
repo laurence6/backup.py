@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 #
-# Copyright (C) 2014-2015  Laurence Liu <liuxy6@gmail.com>
+# Copyright (C) 2014-2016  Laurence Liu <liuxy6@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,14 +18,15 @@
 
 import getopt
 import logging
+from os import getpid, remove
 from os.path import basename
+from random import randrange
 from subprocess import call
 from sys import argv, exit
 from time import time
 
-
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.6.4'
+__VERSION__ = '0.7.0'
 
 
 def printhelp():
@@ -54,12 +55,13 @@ def printhelp():
 
 def printversion():
     print('%s %s\n'
-          'Copyright (C) 2014-2015  Laurence Liu <liuxy6@gmail.com>\n'
+          'Copyright (C) 2014-2016  Laurence Liu <liuxy6@gmail.com>\n'
           'License GPL v3: GNU GPL version 3 <http://www.gnu.org/licenses/>\n'
           'This program comes with ABSOLUTELY NO WARRANTY.\n'
           'This is free software, and you are welcome to redistribute it.\n'
           '\n'
-          'Written by Laurence Liu <liuxy6@gmail.com>' % (__NAME__, __VERSION__))
+          'Written by Laurence Liu <liuxy6@gmail.com>' %
+          (__NAME__, __VERSION__))
 
 
 def getconf(filepath, config=None):
@@ -71,7 +73,7 @@ def getconf(filepath, config=None):
         logger.critical('Cannot read configuration file "%s"', filepath)
         exit()
     try:
-        config = config if not config == None else {}
+        config = config if not config is None else {}
         exec(compile(configlist, '<string>', 'exec'), globals(), config)
         logger.debug('Config list: %s\n', config)
         return config
@@ -89,26 +91,42 @@ class BACKUP(object):
         self.add_options(rsync_opts)
 
     def set_ori_dir(self, arg):
-        self.__ori_dir = arg if arg[-1] == '/' else arg+'/'
+        self.__ori_dir = arg if arg[-1] == '/' else arg + '/'
 
     def set_des_dir(self, arg):
         self.__des_dir = arg
 
     def set_include(self, arg):
-        self.__include = ' '.join(['--include="%s"' % x for x in arg])
+        if len(arg) == 0:
+            return
+        file = open('/tmp/pybackup_%s_include_%s' %
+                    (getpid(), randrange(1000, 9999)), 'w')
+        file.write('\n'.join(arg) + '\n')
+        file.close()
+        self.__include = file.name
 
     def set_exclude(self, arg):
-        self.__exclude = ' '.join(['--exclude="%s"' % x for x in arg])
+        if len(arg) == 0:
+            return
+        file = open('/tmp/pybackup_%s_exclude_%s' %
+                    (getpid(), randrange(1000, 9999)), 'w')
+        file.write('\n'.join(arg) + '\n')
+        file.close()
+        self.__exclude = file.name
 
     def add_options(self, arg):
-        self.__options += ' '+' '.join(arg)
+        if len(arg) == 0:
+            return
+        self.__options += ' ' + ' '.join(arg)
 
     def gen_cmd(self):
+        include = '--include-from="%s"' % self.__include if self.__include else ''
+        exclude = '--exclude-from="%s"' % self.__exclude if self.__exclude else ''
         return 'rsync %s %s %s %s "%s" "%s"' %\
                 (self.default_options,\
                         self.__options,\
-                        self.__include,\
-                        self.__exclude,\
+                        include,\
+                        exclude,\
                         self.__ori_dir,\
                         self.__des_dir)
 
@@ -116,13 +134,22 @@ class BACKUP(object):
         start = int(time())
         self.logger.debug('Bash command: %s', self.cmd)
         if call(self.cmd, shell=True, executable='/bin/bash'):
-            self.logger.error('Something went wrong when executing bash command: %s\n', self.cmd)
+            self.logger.error(
+                'Something went wrong when executing bash command: %s\n',
+                self.cmd)
             return
+        self.cleanup()
         finish = int(time())
 
         totaltime = '%s minutes, %s seconds' %\
                 ((finish-start)//60, (finish-start)%60)
         self.logger.info('Total time: %s\n', totaltime)
+
+    def cleanup(self):
+        if self.__include:
+            remove(self.__include)
+        if self.__exclude:
+            remove(self.__exclude)
 
     ori_dir = property(fset=set_ori_dir)
     des_dir = property(fset=set_des_dir)
@@ -145,7 +172,8 @@ def main():
     for o, a in opts:
         if o in ('-q', '--quiet'):
             logger.setLevel(logging.WARN)
-            BACKUP.default_options = BACKUP.default_options.replace('--verbose', '')
+            BACKUP.default_options = BACKUP.default_options.replace('--verbose',
+                                                                    '')
         elif o in ('-v', '--verbose'):
             logger.setLevel(logging.DEBUG)
         elif o in ('--rsnyc-opts',):
@@ -190,6 +218,7 @@ def main():
 
         if show_cmd:
             print(backup.cmd)
+            backup.cleanup()
         else:
             backup.run()
 
