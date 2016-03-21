@@ -1,18 +1,16 @@
-# pybackup
+# backup.py
 
 A backup script written in python3.
 
 A simple encapsulation of rsync on linux.
 
-
-# Requirements
+## Requirements
 
 * python3
 * bash
 * rsync
 
-
-# Usage
+## Usage
 
     Usage: backup.py [OPTIONS...] CONFIG_FILE [ADDITIONAL_RSYNC_OPTIONS...]
 
@@ -33,8 +31,7 @@ A simple encapsulation of rsync on linux.
 
     Default rsync options: --verbose --human-readable --archive --hard-links --acls --xattrs --numeric-ids --inplace --delete --delete-excluded
 
-
-# Configuration
+## Configuration
 
 The configuration file of this program is similar to a python module and it must comply with python syntax. You can have some different configuration files and you need to specify one when you run this program.
 
@@ -47,8 +44,7 @@ The configuration file must contain some dictionaries named as 'CONFIG_xxx'. One
 * exclude    (Optional)
 * addoptions (Optional)
 
-
-# Example
+## Example
 
 ### Configuration file:
 
@@ -105,8 +101,7 @@ or if you want the quiet:
 
     # backup.py --quiet /root/demo.conf
 
-
-# License
+## License
 
 Copyright (C) 2014-2016  Laurence Liu <liuxy6@gmail.com>
 
