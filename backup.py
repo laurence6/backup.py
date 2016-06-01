@@ -26,7 +26,7 @@ from sys import argv, exit
 from time import time
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.7.0'
+__VERSION__ = '0.7.1'
 
 
 def printhelp():
@@ -196,7 +196,7 @@ def main():
         exit()
 
     for (arglistname, arglist) in config_list.items():
-        if arglistname[:6] != 'CONFIG' or type(arglist) != dict:
+        if arglistname[:6] != 'CONFIG' or not isinstance(arglist, dict):
             continue
         logger.debug('Arglist: %s', arglistname)
         backup = BACKUP(args)
