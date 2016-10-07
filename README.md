@@ -29,7 +29,7 @@ A simple encapsulation of rsync on linux.
           -V, --version               print program version
 
 
-    Default rsync options: --verbose --human-readable --archive --hard-links --acls --xattrs --numeric-ids --inplace --delete --delete-excluded
+    Default rsync options: --verbose --human-readable --archive --hard-links --acls --xattrs --numeric-ids --noatime --inplace --delete --delete-excluded
 
 ## Configuration
 
