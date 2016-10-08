@@ -26,10 +26,10 @@ from sys import argv, exit
 from time import time
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.7.2'
+__VERSION__ = '0.7.3'
 
 
-def printhelp():
+def print_help():
     print('%s %s, Use rsync to backup and to restore files.\n'
           'Usage: %s [OPTIONS...] CONFIG_FILE [ADDITIONAL_RSYNC_OPTIONS...]\n'
           '\n'
@@ -53,7 +53,7 @@ def printhelp():
                   % (__NAME__, __VERSION__, __NAME__, BACKUP.default_options))
 
 
-def printversion():
+def print_version():
     print('%s %s\n'
           'Copyright (C) 2014-2016  Laurence Liu <liuxy6@gmail.com>\n'
           'License GPL v3: GNU GPL version 3 <http://www.gnu.org/licenses/>\n'
@@ -64,7 +64,7 @@ def printversion():
           (__NAME__, __VERSION__))
 
 
-def getconf(filepath, config=None):
+def get_conf(filepath, config=None):
     logger = logging.getLogger('main.getconf')
     try:
         configlist = open(filepath).read()
@@ -99,7 +99,7 @@ class BACKUP(object):
     def set_include(self, arg):
         if len(arg) == 0:
             return
-        file = open('/tmp/pybackup_%s_include_%s' %
+        file = open('/tmp/backup.py_%s_include_%s' %
                     (getpid(), randrange(1000, 9999)), 'w')
         file.write('\n'.join(arg) + '\n')
         file.close()
@@ -182,36 +182,36 @@ def main():
         elif o in ('-n', '--show-cmd'):
             show_cmd = True
         elif o in ('-h', '--help'):
-            printhelp()
+            print_help()
             exit()
         elif o in ('-V', '--version'):
-            printversion()
+            print_version()
             exit()
 
     try:
-        config_list = getconf(args.pop(0))
+        config_lists = get_conf(args.pop(0))
     except IndexError:
         logger.critical('Required argument not found')
-        printhelp()
+        print_help()
         exit()
 
-    for (arglistname, arglist) in config_list.items():
-        if arglistname[:6] != 'CONFIG' or not isinstance(arglist, dict):
+    for (cl_name, cl) in config_lists.items():
+        if cl_name[:6] != 'CONFIG' or not isinstance(cl, dict):
             continue
-        logger.debug('Arglist: %s', arglistname)
+        logger.debug('Arglist: %s', cl_name)
         backup = BACKUP(args)
         try:
-            if not arglist['enabled']:
-                logger.debug('Arglist %s disabled, skipped', arglist)
+            if not cl['enabled']:
+                logger.debug('Arglist %s disabled, skipped', cl_name)
                 continue
             for key in ('ori_dir', 'des_dir'):
-                logger.debug('Set %s as %s', key, arglist[key])
-                setattr(backup, key, arglist[key])
+                logger.debug('Set %s as %s', key, cl[key])
+                setattr(backup, key, cl[key])
             for key in ('include', 'exclude', 'addoptions'):
-                if not key in arglist:
+                if not key in cl:
                     continue
-                logger.debug('Set %s as %s', key, arglist[key])
-                setattr(backup, key, arglist[key])
+                logger.debug('Set %s as %s', key, cl[key])
+                setattr(backup, key, cl[key])
         except (IndexError, KeyError, TypeError):
             logger.critical('Configuration file is incorrect')
             exit()
