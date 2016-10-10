@@ -28,6 +28,8 @@ from time import time
 __NAME__ = basename(argv.pop(0))
 __VERSION__ = '0.7.3'
 
+logger = logging.getLogger('main')
+
 
 def print_help():
     print('%s %s, Use rsync to backup and to restore files.\n'
@@ -65,7 +67,6 @@ def print_version():
 
 
 def get_conf(filepath, config=None):
-    logger = logging.getLogger('main.getconf')
     try:
         configlist = open(filepath).read()
         logger.debug('Configuration file: %s', filepath)
@@ -83,7 +84,6 @@ def get_conf(filepath, config=None):
 
 
 class BACKUP(object):
-    logger = logging.getLogger('main.BACKUP')
     default_options = '--verbose --human-readable --archive --hard-links --acls --xattrs --numeric-ids --noatime --inplace --delete --delete-excluded'
 
     def __init__(self, rsync_opts=''):
@@ -132,7 +132,7 @@ class BACKUP(object):
 
     def run(self):
         start = int(time())
-        self.logger.debug('Bash command: %s', self.cmd)
+        logger.debug('Run bash command: %s', self.cmd)
         if call(self.cmd, shell=True, executable='/bin/bash'):
             self.logger.error(
                 'Something went wrong when executing bash command: %s\n',
@@ -143,7 +143,7 @@ class BACKUP(object):
 
         totaltime = '%s minutes, %s seconds' %\
                 ((finish-start)//60, (finish-start)%60)
-        self.logger.info('Total time: %s\n', totaltime)
+        logger.info('Total time: %s\n', totaltime)
 
     def cleanup(self):
         if self.__include:
@@ -160,7 +160,6 @@ class BACKUP(object):
 
 
 def main():
-    logger = logging.getLogger('main')
     show_cmd = False
 
     try:
@@ -224,8 +223,10 @@ def main():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(format='[%(levelname)-5.5s] %(asctime)s %(funcName)s: %(message)s',\
-            datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+    logging.basicConfig(
+        format='[%(levelname)-5.5s] %(asctime)s %(funcName)s: %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        level=logging.INFO)
 
     try:
         main()
