@@ -22,11 +22,10 @@ from os import getpid, remove
 from os.path import basename
 from random import randrange
 from subprocess import call
-from sys import argv, exit
-from time import time
+from sys import argv
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.7.4'
+__VERSION__ = '0.7.5'
 
 DEFAULT_OPTIONS = ' '.join([
     '--verbose',
@@ -145,7 +144,6 @@ class BACKUP(object):
             self.__des_dir)
 
     def run(self):
-        start = int(time())
         logger.debug('Run bash command: %s', self.cmd)
         if call(self.cmd, shell=True, executable='/bin/bash'):
             self.logger.error(
@@ -153,11 +151,6 @@ class BACKUP(object):
                 self.cmd)
             return
         self.cleanup()
-        finish = int(time())
-
-        totaltime = '%s minutes, %s seconds' %\
-                ((finish-start)//60, (finish-start)%60)
-        logger.info('Total time: %s\n', totaltime)
 
     def cleanup(self):
         if self.__include:
