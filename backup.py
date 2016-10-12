@@ -19,13 +19,13 @@
 import getopt
 import logging
 from os import getpid, remove
-from os.path import basename
+from os.path import basename, isfile
 from random import randrange
 from subprocess import call
 from sys import argv
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.7.6'
+__VERSION__ = '0.7.7'
 
 DEFAULT_OPTIONS = ' '.join([
     '--verbose',
@@ -152,9 +152,9 @@ class BACKUP(object):
         self.cleanup()
 
     def cleanup(self):
-        if self.__include:
+        if self.__include and isfile(self.__include):
             remove(self.__include)
-        if self.__exclude:
+        if self.__exclude and isfile(self.__exclude):
             remove(self.__exclude)
 
     ori_dir = property(fset=set_ori_dir)
