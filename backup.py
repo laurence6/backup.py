@@ -25,7 +25,7 @@ from subprocess import call
 from sys import argv
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.7.5'
+__VERSION__ = '0.7.6'
 
 DEFAULT_OPTIONS = ' '.join([
     '--verbose',
@@ -144,12 +144,11 @@ class BACKUP(object):
             self.__des_dir)
 
     def run(self):
-        logger.debug('Run bash command: %s', self.cmd)
-        if call(self.cmd, shell=True, executable='/bin/bash'):
-            self.logger.error(
-                'Something went wrong when executing bash command: %s\n',
-                self.cmd)
-            return
+        cmd = self.gen_cmd()
+        logger.debug('Run bash command: %s', cmd)
+        if call(cmd, shell=True, executable='/bin/bash'):
+            logger.error(
+                'Something went wrong when executing bash command: %s\n', cmd)
         self.cleanup()
 
     def cleanup(self):
@@ -163,7 +162,6 @@ class BACKUP(object):
     include = property(fset=set_include)
     exclude = property(fset=set_exclude)
     addoptions = property(fset=add_options)
-    cmd = property(gen_cmd)
 
 
 def main():
@@ -224,7 +222,7 @@ def main():
             exit()
 
         if show_cmd:
-            print(backup.cmd)
+            print(backup.gen_cmd())
             backup.cleanup()
         else:
             backup.run()
