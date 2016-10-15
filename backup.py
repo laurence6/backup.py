@@ -25,7 +25,7 @@ from subprocess import call
 from sys import argv
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.7.7'
+__VERSION__ = '0.7.8'
 
 DEFAULT_OPTIONS = ' '.join([
     '--verbose',
@@ -56,7 +56,7 @@ def print_help():
         '      -v, --verbose               increase verbosity\n'
         '\n'
         '  Backup Options:\n'
-        '          --rsnyc-opts="..."      replace the default rsync options\n'
+        '          --rsync-opts="..."      replace the default rsync options\n'
         '      -n, --show-cmd              print rsync command and exit\n'
         '\n'
         '  Other Options:\n'
@@ -169,7 +169,7 @@ def main():
 
     try:
         opts, args = getopt.getopt(argv, 'qv nhV',
-                                   ['quiet', 'verbose', 'rsnyc-opts=', 'show-cmd', 'help', 'version'])
+                                   ['quiet', 'verbose', 'rsync-opts=', 'show-cmd', 'help', 'version'])
     except getopt.GetoptError as error:
         logger.critical(error)
         exit()
@@ -181,7 +181,7 @@ def main():
             DEFAULT_OPTIONS = DEFAULT_OPTIONS.replace('--verbose', '')
         elif o in ('-v', '--verbose'):
             logger.setLevel(logging.DEBUG)
-        elif o in ('--rsnyc-opts',):
+        elif o in ('--rsync-opts',):
             DEFAULT_OPTIONS = a
             logger.debug('Set default options: %s', a)
         elif o in ('-n', '--show-cmd'):

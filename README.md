@@ -21,7 +21,7 @@ A simple encapsulation of rsync on linux.
           -v, --verbose               increase verbosity
 
       Backup Options:
-              --rsnyc-opts="..."      replace the default rsync options
+              --rsync-opts="..."      replace the default rsync options
           -n, --show-cmd              print rsync command and exit
 
       Other Options:
