@@ -1,20 +1,4 @@
 #! /usr/bin/env python3
-#
-# Copyright (C) 2014-2016  Laurence Liu <liuxy6@gmail.com>
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
 
 import getopt
 import logging
@@ -25,9 +9,9 @@ from subprocess import call
 from sys import argv
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.7.8'
+__VERSION__ = '0.7.9'
 
-DEFAULT_OPTIONS = ' '.join([
+DEFAULT_OPTIONS = [
     '--verbose',
     '--human-readable',
     '--archive',
@@ -39,7 +23,7 @@ DEFAULT_OPTIONS = ' '.join([
     '--inplace',
     '--delete',
     '--delete-excluded',
-])
+]
 
 logger = logging.getLogger('main')
 
@@ -66,7 +50,7 @@ def print_help():
         'Default rsync options: %s\n'
         '\n'
         'Written by Laurence Liu <liuxy6@gmail.com>'
-        % (__NAME__, __VERSION__, __NAME__, DEFAULT_OPTIONS))
+        % (__NAME__, __VERSION__, __NAME__, ' '.join(DEFAULT_OPTIONS)))
 
 
 def print_version():
@@ -85,13 +69,12 @@ def get_conf(filepath, config=None):
     try:
         configlist = open(filepath).read()
         logger.debug('Configuration file: %s', filepath)
-    except IOError:
+    except:
         logger.critical('Cannot read configuration file "%s"', filepath)
         exit()
     try:
         config = config if not config is None else {}
         exec(compile(configlist, '<string>', 'exec'), globals(), config)
-        logger.debug('Config list: %s\n', config)
         return config
     except:
         logger.critical('Configuration file is incorrect')
@@ -178,11 +161,11 @@ def main():
     for o, a in opts:
         if o in ('-q', '--quiet'):
             logger.setLevel(logging.WARN)
-            DEFAULT_OPTIONS = DEFAULT_OPTIONS.replace('--verbose', '')
+            DEFAULT_OPTIONS = DEFAULT_OPTIONS.remove('--verbose')
         elif o in ('-v', '--verbose'):
             logger.setLevel(logging.DEBUG)
         elif o in ('--rsync-opts',):
-            DEFAULT_OPTIONS = a
+            DEFAULT_OPTIONS = [a,]
             logger.debug('Set default options: %s', a)
         elif o in ('-n', '--show-cmd'):
             show_cmd = True
