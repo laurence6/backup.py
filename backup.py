@@ -9,7 +9,7 @@ from subprocess import call
 from sys import argv
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.7.9'
+__VERSION__ = '0.7.10'
 
 DEFAULT_OPTIONS = [
     '--verbose',
@@ -186,18 +186,27 @@ def main():
     for (cl_name, cl) in config_lists.items():
         if cl_name[:6] != 'CONFIG' or not isinstance(cl, dict):
             continue
-        logger.debug('Arglist: %s', cl_name)
+        logger.debug('Config: %s', cl_name)
         backup = BACKUP(args)
         try:
             if not cl['enabled']:
-                logger.debug('Arglist %s disabled, skipped', cl_name)
+                logger.debug('Config %s disabled, skipped', cl_name)
                 continue
-            for key in ('ori_dir', 'des_dir'):
-                logger.debug('Set %s as %s', key, cl[key])
-                setattr(backup, key, cl[key])
-            for key in ('include', 'exclude', 'addoptions'):
-                if not key in cl:
-                    continue
+
+            cl_keys = cl.keys()
+            for key, optional in (
+                    ('ori_dir', False),
+                    ('des_dir', False),
+                    ('include', True),
+                    ('exclude', True),
+                    ('addoptions', True),
+                ):
+                if not key in cl_keys:
+                    if optional:
+                        continue
+                    else:
+                        logger.critical('Cannot found key %s in Config %s', key, cl_name)
+                        exit()
                 logger.debug('Set %s as %s', key, cl[key])
                 setattr(backup, key, cl[key])
         except (IndexError, KeyError, TypeError):
