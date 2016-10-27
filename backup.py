@@ -9,7 +9,7 @@ from subprocess import call
 from sys import argv
 
 __NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.7.10'
+__VERSION__ = '0.8.0'
 
 DEFAULT_OPTIONS = [
     '--verbose',
@@ -82,63 +82,86 @@ def get_conf(filepath, config=None):
 
 
 class BACKUP(object):
-    def __init__(self, rsync_opts=''):
-        self.__ori_dir = self.__des_dir = self.__include = self.__exclude = self.__options = ''
+    def __init__(self, rsync_opts=None):
+        self._ori_dir = ''
+        self._des_dir = ''
+        self._include = []
+        self._include_file = ''
+        self._exclude = []
+        self._exclude_file = ''
+        self._options = ''
+        self.add_options(DEFAULT_OPTIONS)
         self.add_options(rsync_opts)
 
     def set_ori_dir(self, arg):
-        self.__ori_dir = arg if arg[-1] == '/' else arg + '/'
+        self._ori_dir = arg if arg[-1] == '/' else arg + '/'
 
     def set_des_dir(self, arg):
-        self.__des_dir = arg
+        self._des_dir = arg
 
     def set_include(self, arg):
-        if len(arg) == 0:
-            return
-        file = open('/tmp/backup.py_%s_include_%s' %
-                    (getpid(), randrange(1000, 9999)), 'w')
-        file.write('\n'.join(arg) + '\n')
-        file.close()
-        self.__include = file.name
+        self._include = arg
 
     def set_exclude(self, arg):
-        if len(arg) == 0:
-            return
-        file = open('/tmp/pybackup_%s_exclude_%s' %
-                    (getpid(), randrange(1000, 9999)), 'w')
-        file.write('\n'.join(arg) + '\n')
-        file.close()
-        self.__exclude = file.name
+        self._exclude = arg
 
     def add_options(self, arg):
+        if not isinstance(arg, (tuple, list)):
+            logger.debug('arg %s invalid', arg)
+            return
         if len(arg) == 0:
             return
-        self.__options += ' ' + ' '.join(arg)
+        self._options += ' ' + ' '.join(arg)
+
+    def create_inexclude_file(self):
+        inexclude = []
+        for name in ('include', 'exclude'):
+            value = getattr(self, '_%s' % name)
+            value = '\n'.join(value) + '\n' if value else ''
+            inexclude.append(value)
+
+            if not value:
+                continue
+
+            file = open(
+                '/tmp/backup.py_%s_%s_%s' % (getpid(), name, randrange(1, 10000)),
+                'x',
+            )
+            file.write(value)
+            file.close()
+            setattr(self, '_%s_file' % name, file.name)
+        return inexclude
+
+    def remove_inexclude_file(self):
+        for field in ('_include_file', '_exclude_file'):
+            value = getattr(self, field)
+            if value and isfile(value):
+                remove(value)
+                setattr(self, field, '')
 
     def gen_cmd(self):
-        include = '--include-from="%s"' % self.__include if self.__include else ''
-        exclude = '--exclude-from="%s"' % self.__exclude if self.__exclude else ''
-        return 'rsync %s %s %s %s "%s" "%s"' % (
-            DEFAULT_OPTIONS,
-            self.__options,
-            include,
-            exclude,
-            self.__ori_dir,
-            self.__des_dir)
+        include_from = '--include-from="%s"' % self._include_file if self._include_file else ''
+        exclude_from = '--exclude-from="%s"' % self._exclude_file if self._exclude_file else ''
+        return 'rsync %s %s %s "%s" "%s"' % (
+            self._options,
+            include_from,
+            exclude_from,
+            self._ori_dir,
+            self._des_dir)
 
-    def run(self):
+    def run(self, dry_run=False):
+        inexclude = self.create_inexclude_file()
         cmd = self.gen_cmd()
-        logger.debug('Run bash command: %s', cmd)
-        if call(cmd, shell=True, executable='/bin/bash'):
-            logger.error(
-                'Something went wrong when executing bash command: %s\n', cmd)
-        self.cleanup()
-
-    def cleanup(self):
-        if self.__include and isfile(self.__include):
-            remove(self.__include)
-        if self.__exclude and isfile(self.__exclude):
-            remove(self.__exclude)
+        if dry_run:
+            print(cmd)
+            print('Include:\n%s\nExclude:\n%s' % tuple(inexclude))
+        else:
+            logger.debug('Run bash command: %s', cmd)
+            if call(cmd, shell=True, executable='/bin/bash'):
+                logger.error(
+                    'Something went wrong when executing bash command: %s\n',
+                    cmd)
+        self.remove_inexclude_file()
 
     ori_dir = property(fset=set_ori_dir)
     des_dir = property(fset=set_des_dir)
@@ -213,11 +236,7 @@ def main():
             logger.critical('Configuration file is incorrect')
             exit()
 
-        if show_cmd:
-            print(backup.gen_cmd())
-            backup.cleanup()
-        else:
-            backup.run()
+        backup.run(show_cmd)
 
 
 if __name__ == '__main__':
