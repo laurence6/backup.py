@@ -8,8 +8,8 @@ from random import randrange
 from subprocess import call
 from sys import argv
 
-__NAME__ = basename(argv.pop(0))
-__VERSION__ = '0.8.0'
+NAME = basename(argv.pop(0))
+VERSION = '0.8.1'
 
 DEFAULT_OPTIONS = [
     '--verbose',
@@ -25,7 +25,7 @@ DEFAULT_OPTIONS = [
     '--delete-excluded',
 ]
 
-logger = logging.getLogger('main')
+LOGGER = logging.getLogger('main')
 
 
 def print_help():
@@ -50,7 +50,7 @@ def print_help():
         'Default rsync options: %s\n'
         '\n'
         'Written by Laurence Liu <liuxy6@gmail.com>'
-        % (__NAME__, __VERSION__, __NAME__, ' '.join(DEFAULT_OPTIONS)))
+        % (NAME, VERSION, NAME, ' '.join(DEFAULT_OPTIONS)))
 
 
 def print_version():
@@ -62,22 +62,22 @@ def print_version():
         'This is free software, and you are welcome to redistribute it.\n'
         '\n'
         'Written by Laurence Liu <liuxy6@gmail.com>'
-        % (__NAME__, __VERSION__))
+        % (NAME, VERSION))
 
 
 def get_conf(filepath, config=None):
     try:
         configlist = open(filepath).read()
-        logger.debug('Configuration file: %s', filepath)
+        LOGGER.debug('Configuration file: %s', filepath)
     except:
-        logger.critical('Cannot read configuration file "%s"', filepath)
+        LOGGER.critical('Cannot read configuration file "%s"', filepath)
         exit()
     try:
         config = config if not config is None else {}
         exec(compile(configlist, '<string>', 'exec'), globals(), config)
         return config
     except:
-        logger.critical('Configuration file is incorrect')
+        LOGGER.critical('Configuration file is incorrect')
         exit()
 
 
@@ -107,7 +107,7 @@ class BACKUP(object):
 
     def add_options(self, arg):
         if not isinstance(arg, (tuple, list)):
-            logger.debug('arg %s invalid', arg)
+            LOGGER.debug('arg %s invalid', arg)
             return
         if len(arg) == 0:
             return
@@ -156,9 +156,9 @@ class BACKUP(object):
             print(cmd)
             print('Include:\n%s\nExclude:\n%s' % tuple(inexclude))
         else:
-            logger.debug('Run bash command: %s', cmd)
+            LOGGER.debug('Run bash command: %s', cmd)
             if call(cmd, shell=True, executable='/bin/bash'):
-                logger.error(
+                LOGGER.error(
                     'Something went wrong when executing bash command: %s\n',
                     cmd)
         self.remove_inexclude_file()
@@ -174,22 +174,31 @@ def main():
     show_cmd = False
 
     try:
-        opts, args = getopt.getopt(argv, 'qv nhV',
-                                   ['quiet', 'verbose', 'rsync-opts=', 'show-cmd', 'help', 'version'])
+        opts, args = getopt.getopt(
+            argv,
+            'qv nhV',
+            ['quiet',
+             'verbose',
+             'rsync-opts=',
+             'show-cmd',
+             'help',
+             'version',
+            ],
+        )
     except getopt.GetoptError as error:
-        logger.critical(error)
+        LOGGER.critical(error)
         exit()
 
     global DEFAULT_OPTIONS
     for o, a in opts:
         if o in ('-q', '--quiet'):
-            logger.setLevel(logging.WARN)
+            LOGGER.setLevel(logging.WARN)
             DEFAULT_OPTIONS = DEFAULT_OPTIONS.remove('--verbose')
         elif o in ('-v', '--verbose'):
-            logger.setLevel(logging.DEBUG)
+            LOGGER.setLevel(logging.DEBUG)
         elif o in ('--rsync-opts',):
             DEFAULT_OPTIONS = [a,]
-            logger.debug('Set default options: %s', a)
+            LOGGER.debug('Set default options: %s', a)
         elif o in ('-n', '--show-cmd'):
             show_cmd = True
         elif o in ('-h', '--help'):
@@ -202,18 +211,18 @@ def main():
     try:
         config_lists = get_conf(args.pop(0))
     except IndexError:
-        logger.critical('Required argument not found')
+        LOGGER.critical('Required argument not found')
         print_help()
         exit()
 
     for (cl_name, cl) in config_lists.items():
         if cl_name[:6] != 'CONFIG' or not isinstance(cl, dict):
             continue
-        logger.debug('Config: %s', cl_name)
+        LOGGER.debug('Config: %s', cl_name)
         backup = BACKUP(args)
         try:
             if not cl['enabled']:
-                logger.debug('Config %s disabled, skipped', cl_name)
+                LOGGER.debug('Config %s disabled, skipped', cl_name)
                 continue
 
             cl_keys = cl.keys()
@@ -228,12 +237,12 @@ def main():
                     if optional:
                         continue
                     else:
-                        logger.critical('Cannot found key %s in Config %s', key, cl_name)
+                        LOGGER.critical('Cannot found key %s in Config %s', key, cl_name)
                         exit()
-                logger.debug('Set %s as %s', key, cl[key])
+                LOGGER.debug('Set %s as %s', key, cl[key])
                 setattr(backup, key, cl[key])
         except (IndexError, KeyError, TypeError):
-            logger.critical('Configuration file is incorrect')
+            LOGGER.critical('Configuration file is incorrect')
             exit()
 
         backup.run(show_cmd)
@@ -248,5 +257,5 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        logging.info('Keyboard interrupt received, exit')
+        LOGGER.info('Keyboard interrupt received, exit')
         exit()
