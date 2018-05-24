@@ -55,7 +55,7 @@ def print_help():
 def print_version():
     print(
         '%s %s\n'
-        'Copyright (C) 2014-2017  Laurence Liu <liuxy6@gmail.com>\n'
+        'Copyright (C) 2014-2018  Laurence Liu <liuxy6@gmail.com>\n'
         'License GPL v3: GNU GPL version 3 <http://www.gnu.org/licenses/>\n'
         'This program comes with ABSOLUTELY NO WARRANTY.\n'
         'This is free software, and you are welcome to redistribute it.\n'
