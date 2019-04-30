@@ -46,60 +46,15 @@ The configuration file must contain some dictionaries named as 'CONFIG_xxx'. One
 
 ## Example
 
-### Configuration file:
-
-/root/demo.conf
-
-```python
-CONFIG_ROOT = {
-                  'enabled': True,               # Required. Set False if you don't want to backup this folder
-                  'ori_dir': '/',                # Required. Original directory
-                  'des_dir': '/mnt/Backup/root', # Required. Destination directory
-                  'include': [
-                      '/home/user/',
-                  ],                             # Optional. Do NOT exclude these files
-                  'exclude': [
-                      'lost+found',
-                      '/dev/*',
-                      '/proc/*',
-                      '/sys/*',
-                      '/tmp/*',
-                      '/run/*',
-                      '/mnt/*',
-                      '/media/*',
-                      '/var/tmp/*',
-                      '/home/*',
-                  ],                             # Optional. Exclude these files
-                  'addoptions': [
-                      '--log-file=/mnt/root-log',
-                  ],                             # Optional. Some additional options for rsync
-              }
-CONFIG_HOME = {
-                  'enabled': True,
-                  'ori_dir': '/home/',
-                  'des_dir': '/mnt/Backup/home',
-                  'include': [],
-                  'exclude': [
-                      'lost+found',
-                      '*cache*',
-                      '*Cache*',
-                      '*.log*',
-                      '*.old',
-                      '*tmp*',
-                  ],
-                  'addoptions': [
-                      '--log-file=/mnt/home-log',
-                  ],
-              }
-```
+### [Example configuration file](demo.conf)
 
 ### Command:
 
-    # backup.py /root/demo.conf
+    # backup.py demo.conf
 
 or if you want the quiet:
 
-    # backup.py --quiet /root/demo.conf
+    # backup.py --quiet demo.conf
 
 ## License
 

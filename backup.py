@@ -9,7 +9,7 @@ from subprocess import call
 from sys import argv
 
 NAME = basename(argv.pop(0))
-VERSION = '0.8.2'
+VERSION = '0.9.0'
 
 DEFAULT_OPTIONS = [
     '--verbose',
@@ -104,6 +104,10 @@ class BACKUP(object):
     def set_exclude(self, arg):
         self._exclude = arg
 
+    def options(self, arg):
+        self._options = ''
+        self.add_options(arg)
+
     def add_options(self, arg):
         if not isinstance(arg, (tuple, list)):
             LOGGER.debug('arg %s invalid', arg)
@@ -166,6 +170,7 @@ class BACKUP(object):
     des_dir = property(fset=set_des_dir)
     include = property(fset=set_include)
     exclude = property(fset=set_exclude)
+    options = property(fset=options)
     addoptions = property(fset=add_options)
 
 
@@ -230,6 +235,7 @@ def main():
                     ('des_dir', False),
                     ('include', True),
                     ('exclude', True),
+                    ('options', True),
                     ('addoptions', True),
                 ):
                 if not key in cl_keys:
