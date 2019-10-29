@@ -38,23 +38,23 @@ The configuration file of this program is similar to a python module and it must
 The configuration file must contain some dictionaries named as 'CONFIG_xxx'. One dictionary represtents one folder you want to backup. Six options can be put into the dictionary:
 
 * enabled    (Required)
-* ori_dir    (Required)
-* des_dir    (Required)
+* src_dir    (Required)
+* dst_dir    (Required)
 * include    (Optional)
 * exclude    (Optional)
 * addoptions (Optional)
 
 ## Example
 
-### [Example configuration file](demo.conf)
+### [Example configuration file](example.conf)
 
 ### Command:
 
-    # backup.py demo.conf
+    # backup.py example.conf
 
 or if you want the quiet:
 
-    # backup.py --quiet demo.conf
+    # backup.py --quiet example.conf
 
 ## License
 

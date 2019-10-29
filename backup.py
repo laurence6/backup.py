@@ -9,7 +9,7 @@ from subprocess import call
 from sys import argv
 
 NAME = basename(argv.pop(0))
-VERSION = '0.9.0'
+VERSION = '0.10.0'
 
 DEFAULT_OPTIONS = [
     '--verbose',
@@ -82,8 +82,8 @@ def get_conf(filepath, config=None):
 
 class BACKUP(object):
     def __init__(self, rsync_opts=None):
-        self._ori_dir = ''
-        self._des_dir = ''
+        self._src_dir = ''
+        self._dst_dir = ''
         self._include = []
         self._include_file = ''
         self._exclude = []
@@ -92,11 +92,11 @@ class BACKUP(object):
         self.add_options(DEFAULT_OPTIONS)
         self.add_options(rsync_opts)
 
-    def set_ori_dir(self, arg):
-        self._ori_dir = arg if arg[-1] == '/' else arg + '/'
+    def set_src_dir(self, arg):
+        self._src_dir = arg if arg[-1] == '/' else arg + '/'
 
-    def set_des_dir(self, arg):
-        self._des_dir = arg
+    def set_dst_dir(self, arg):
+        self._dst_dir = arg
 
     def set_include(self, arg):
         self._include = arg
@@ -149,8 +149,8 @@ class BACKUP(object):
             self._options,
             include_from,
             exclude_from,
-            self._ori_dir,
-            self._des_dir)
+            self._src_dir,
+            self._dst_dir)
 
     def run(self, dry_run=False):
         inexclude = self.create_inexclude_file()
@@ -166,8 +166,8 @@ class BACKUP(object):
                     cmd)
         self.remove_inexclude_file()
 
-    ori_dir = property(fset=set_ori_dir)
-    des_dir = property(fset=set_des_dir)
+    src_dir = property(fset=set_src_dir)
+    dst_dir = property(fset=set_dst_dir)
     include = property(fset=set_include)
     exclude = property(fset=set_exclude)
     options = property(fset=options)
@@ -231,8 +231,8 @@ def main():
 
             cl_keys = cl.keys()
             for key, optional in (
-                    ('ori_dir', False),
-                    ('des_dir', False),
+                    ('src_dir', False),
+                    ('dst_dir', False),
                     ('include', True),
                     ('exclude', True),
                     ('options', True),
