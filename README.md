@@ -1,13 +1,12 @@
 # backup.py
 
-A backup script written in python3.
+A backup script written in Python.
 
-A simple encapsulation of rsync on linux.
+A simple encapsulation of rsync.
 
 ## Requirements
 
 * python3
-* bash
 * rsync
 
 ## Usage
