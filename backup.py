@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
-import getopt
 import logging
+from getopt import getopt
 from os import getpid, remove
 from os.path import basename, isfile
 from random import randrange
@@ -9,10 +9,11 @@ from subprocess import call
 from sys import argv
 
 NAME = basename(argv.pop(0))
-VERSION = '0.10.0'
+VERSION = '0.11.0'
 
 DEFAULT_OPTIONS = [
     '--verbose',
+    '--itemize-changes',
     '--human-readable',
     '--archive',
     '--hard-links',
@@ -34,177 +35,139 @@ def print_help():
         '\n'
         'OPTIONS:\n'
         '\n'
-        '  Informative Output:\n'
-        '      -q, --quiet                 keep quiet\n'
-        '      -v, --verbose               increase verbosity\n'
+        '    -q, --quiet       keep quiet\n'
+        '    -v, --verbose     increase verbosity\n'
+        '    -n, --show-cmd    print rsync command and exit\n'
+        '    -h, --help        print this help list and exit\n'
+        '    -V, --version     print program version and exit\n'
         '\n'
-        '  Backup Options:\n'
-        '          --rsync-opts="..."      replace the default rsync options\n'
-        '      -n, --show-cmd              print rsync command and exit\n'
         '\n'
-        '  Other Options:\n'
-        '      -h, --help                  print this help list\n'
-        '      -V, --version               print program version\n'
-        '\n\n'
         'Default rsync options: %s\n'
         '\n'
-        'Written by Laurence Liu <liuxy6@gmail.com>'
-        % (NAME, VERSION, NAME, ' '.join(DEFAULT_OPTIONS)))
+        'Written by Laurence Liu <liuxy6@gmail.com>' % (NAME, VERSION, NAME, ' '.join(DEFAULT_OPTIONS))
+    )
 
 
 def print_version():
     print(
         '%s %s\n'
-        'Copyright (C) 2014-2019  Laurence Liu <liuxy6@gmail.com>\n'
+        'Copyright (C) 2014-2020  Laurence Liu <liuxy6@gmail.com>\n'
         'License GPL v3: GNU GPL version 3 <http://www.gnu.org/licenses/>\n'
         'This program comes with ABSOLUTELY NO WARRANTY.\n'
         'This is free software, and you are welcome to redistribute it.\n'
         '\n'
-        'Written by Laurence Liu <liuxy6@gmail.com>'
-        % (NAME, VERSION))
+        'Written by Laurence Liu <liuxy6@gmail.com>' % (NAME, VERSION)
+    )
 
 
-def get_conf(filepath, config=None):
-    try:
-        configlist = open(filepath).read()
-        LOGGER.debug('Configuration file: %s', filepath)
-    except:
-        LOGGER.critical('Cannot read configuration file "%s"', filepath)
-        exit()
-    try:
-        config = config if not config is None else {}
-        exec(compile(configlist, '<string>', 'exec'), globals(), config)
-        return config
-    except:
-        LOGGER.critical('Configuration file is incorrect')
-        exit()
-
-
-class BACKUP(object):
-    def __init__(self, rsync_opts=None):
-        self._src_dir = ''
-        self._dst_dir = ''
-        self._include = []
-        self._include_file = ''
-        self._exclude = []
-        self._exclude_file = ''
-        self._options = ''
-        self.add_options(DEFAULT_OPTIONS)
-        self.add_options(rsync_opts)
-
-    def set_src_dir(self, arg):
-        self._src_dir = arg if arg[-1] == '/' else arg + '/'
-
-    def set_dst_dir(self, arg):
-        self._dst_dir = arg
-
-    def set_include(self, arg):
-        self._include = arg
-
-    def set_exclude(self, arg):
-        self._exclude = arg
-
-    def options(self, arg):
-        self._options = ''
-        self.add_options(arg)
-
-    def add_options(self, arg):
-        if not isinstance(arg, (tuple, list)):
-            LOGGER.debug('arg %s invalid', arg)
-            return
-        if len(arg) == 0:
-            return
-        self._options += ' ' + ' '.join(arg)
-
+class Backupper(dict):
     def create_inexclude_file(self):
         inexclude = []
-        for name in ('include', 'exclude'):
-            value = getattr(self, '_%s' % name)
-            value = '\n'.join(value) + '\n' if value else ''
-            inexclude.append(value)
+        for action in ('include', 'exclude'):
+            entries = self[action]
+            entries = '\n'.join(entries) + '\n' if entries else ''
 
-            if not value:
+            inexclude.append(entries)
+
+            if not entries:
                 continue
 
-            file = open(
-                '/tmp/backup.py_%s_%s_%s' % (getpid(), name, randrange(1, 10000)),
-                'x',
-            )
-            file.write(value)
-            file.close()
-            setattr(self, '_%s_file' % name, file.name)
+            with open('/tmp/backup.py_%s_%s_%s' % (getpid(), action, randrange(1, 10000)), 'x') as file:
+                file.write(entries)
+
+            self['_%s_file' % action] = file.name
         return inexclude
 
     def remove_inexclude_file(self):
         for field in ('_include_file', '_exclude_file'):
-            value = getattr(self, field)
-            if value and isfile(value):
-                remove(value)
-                setattr(self, field, '')
+            if field in self:
+                filename = self[field]
+                if filename and isfile(filename):
+                    remove(filename)
+                del self[field]
 
     def gen_cmd(self):
-        include_from = '--include-from="%s"' % self._include_file if self._include_file else ''
-        exclude_from = '--exclude-from="%s"' % self._exclude_file if self._exclude_file else ''
-        return 'rsync %s %s %s "%s" "%s"' % (
-            self._options,
-            include_from,
-            exclude_from,
-            self._src_dir,
-            self._dst_dir)
+        include_from = '--include-from="%s"' % self['_include_file'] if '_include_file' in self else ''
+        exclude_from = '--exclude-from="%s"' % self['_exclude_file'] if '_exclude_file' in self else ''
+        return 'rsync %s %s %s "%s" "%s"' % (self['options'], include_from, exclude_from, self['src_dir'], self['dst_dir'])
 
-    def run(self, dry_run=False):
+    def run(self, dry_run):
+        if not self['enabled']:
+            return
+
         inexclude = self.create_inexclude_file()
+
         cmd = self.gen_cmd()
-        if dry_run:
-            print(cmd)
-            print('Include:\n%s\nExclude:\n%s' % tuple(inexclude))
-        else:
-            LOGGER.debug('Run bash command: %s', cmd)
+
+        LOGGER.debug('Run bash command: %s\nInclude:\n%s\nExclude:\n%s', cmd, inexclude[0], inexclude[1])
+
+        if not dry_run:
             if call(cmd, shell=True, executable='/bin/bash'):
-                LOGGER.error(
-                    'Something went wrong when executing bash command: %s\n',
-                    cmd)
+                LOGGER.error('Something went wrong when executing bash command: %s\n', cmd)
+
         self.remove_inexclude_file()
 
-    src_dir = property(fset=set_src_dir)
-    dst_dir = property(fset=set_dst_dir)
-    include = property(fset=set_include)
-    exclude = property(fset=set_exclude)
-    options = property(fset=options)
-    addoptions = property(fset=add_options)
+
+def get_backuppers(args):
+    filepath = args.pop(0)
+    configfile = open(filepath).read()
+    LOGGER.debug('Config file: %s', filepath)
+
+    configs = {}
+    exec(compile(configfile, '<string>', 'exec'), {'DEFAULT_OPTIONS': DEFAULT_OPTIONS}, configs)
+    configs = {k: get_backupper(v, args) for (k, v) in configs.items() if k.startswith('CONFIG') and isinstance(v, dict)}
+    return configs
+
+
+def get_backupper(config, options_from_cli):
+    backupper = Backupper()
+
+    backupper['enabled'] = config['enabled']
+    backupper['src_dir'] = config['src_dir']
+    backupper['dst_dir'] = config['dst_dir']
+    backupper['include'] = config.get('include', None)
+    backupper['exclude'] = config.get('exclude', None)
+
+    backupper['options'] = ''
+
+    def append_options(options):
+        if isinstance(options, (tuple, list)):
+            backupper['options'] += ' ' + ' '.join(options)
+        elif isinstance(options, str):
+            backupper['options'] += ' ' + options
+
+    if config.get('options_mode', 'append') == 'append':
+        append_options(DEFAULT_OPTIONS)
+    if 'options' in config:
+        append_options(config['options'])
+    if options_from_cli:
+        append_options(options_from_cli)
+
+    return backupper
 
 
 def main():
-    show_cmd = False
+    dry_run = False
 
-    try:
-        opts, args = getopt.getopt(
-            argv,
-            'qv nhV',
-            ['quiet',
-             'verbose',
-             'rsync-opts=',
-             'show-cmd',
-             'help',
-             'version',
-            ],
-        )
-    except getopt.GetoptError as error:
-        LOGGER.critical(error)
-        exit()
+    opts, args = getopt(
+        argv,
+        'qvnhV',
+        [
+            'quiet',
+            'verbose',
+            'dry-run',
+            'help',
+            'version',
+        ],
+    )
 
-    global DEFAULT_OPTIONS
     for o, a in opts:
         if o in ('-q', '--quiet'):
             LOGGER.setLevel(logging.WARN)
-            DEFAULT_OPTIONS = DEFAULT_OPTIONS.remove('--verbose')
         elif o in ('-v', '--verbose'):
             LOGGER.setLevel(logging.DEBUG)
-        elif o in ('--rsync-opts',):
-            DEFAULT_OPTIONS = [a,]
-            LOGGER.debug('Set default options: %s', a)
-        elif o in ('-n', '--show-cmd'):
-            show_cmd = True
+        elif o in ('-n', '--dry-run'):
+            dry_run = True
         elif o in ('-h', '--help'):
             print_help()
             exit()
@@ -212,52 +175,19 @@ def main():
             print_version()
             exit()
 
-    try:
-        config_lists = get_conf(args.pop(0))
-    except IndexError:
+    if len(args) == 0:
         LOGGER.critical('Required argument not found')
         print_help()
         exit()
 
-    for (cl_name, cl) in config_lists.items():
-        if cl_name[:6] != 'CONFIG' or not isinstance(cl, dict):
-            continue
-        LOGGER.debug('Config: %s', cl_name)
-        backup = BACKUP(args)
-        try:
-            if not cl['enabled']:
-                LOGGER.debug('Config %s disabled, skipped', cl_name)
-                continue
-
-            cl_keys = cl.keys()
-            for key, optional in (
-                    ('src_dir', False),
-                    ('dst_dir', False),
-                    ('include', True),
-                    ('exclude', True),
-                    ('options', True),
-                    ('addoptions', True),
-                ):
-                if not key in cl_keys:
-                    if optional:
-                        continue
-                    else:
-                        LOGGER.critical('Cannot found key %s in Config %s', key, cl_name)
-                        exit()
-                LOGGER.debug('Set %s as %s', key, cl[key])
-                setattr(backup, key, cl[key])
-        except (IndexError, KeyError, TypeError):
-            LOGGER.critical('Configuration file is incorrect')
-            exit()
-
-        backup.run(show_cmd)
+    backuppers = get_backuppers(args)
+    for (name, backupper) in backuppers.items():
+        LOGGER.debug('Run %s', name)
+        backupper.run(dry_run)
 
 
 if __name__ == '__main__':
-    logging.basicConfig(
-        format='[%(levelname)-5.5s] %(asctime)s %(funcName)s: %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
-        level=logging.INFO)
+    logging.basicConfig(format='[%(levelname)-5.5s] %(asctime)s %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
     try:
         main()
