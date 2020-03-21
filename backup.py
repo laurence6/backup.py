@@ -9,7 +9,7 @@ from subprocess import call
 from sys import argv
 
 NAME = basename(argv.pop(0))
-VERSION = '0.11.0'
+VERSION = '0.11.1'
 
 DEFAULT_OPTIONS = [
     '--verbose',
@@ -161,7 +161,7 @@ def main():
         ],
     )
 
-    for o, a in opts:
+    for o, _ in opts:
         if o in ('-q', '--quiet'):
             LOGGER.setLevel(logging.WARN)
         elif o in ('-v', '--verbose'):
@@ -182,12 +182,12 @@ def main():
 
     backuppers = get_backuppers(args)
     for (name, backupper) in backuppers.items():
-        LOGGER.debug('Run %s', name)
+        LOGGER.info('Run %s', name)
         backupper.run(dry_run)
 
 
 if __name__ == '__main__':
-    logging.basicConfig(format='[%(levelname)-5.5s] %(asctime)s %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+    logging.basicConfig(format='\033[1;34m[%(levelname)s] %(funcName)s: %(message)s\033[0m', datefmt='%H:%M:%S', level=logging.INFO)
 
     try:
         main()
