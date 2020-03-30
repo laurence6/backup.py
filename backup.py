@@ -9,7 +9,7 @@ from subprocess import call
 from sys import argv
 
 NAME = basename(argv.pop(0))
-VERSION = '0.11.1'
+VERSION = '0.12.0'
 
 DEFAULT_OPTIONS = [
     '--verbose',
@@ -30,8 +30,8 @@ LOGGER = logging.getLogger('main')
 
 def print_help():
     print(
-        '%s %s, Use rsync to backup and to restore files.\n'
-        'Usage: %s [OPTIONS...] CONFIG_FILE [ADDITIONAL_RSYNC_OPTIONS...]\n'
+        f'{NAME} {VERSION}, Use rsync to backup and to restore files.\n'
+        f'Usage: {NAME} [OPTIONS...] CONFIG_FILE [ADDITIONAL_RSYNC_OPTIONS...]\n'
         '\n'
         'OPTIONS:\n'
         '\n'
@@ -42,28 +42,28 @@ def print_help():
         '    -V, --version     print program version and exit\n'
         '\n'
         '\n'
-        'Default rsync options: %s\n'
+        f'Default rsync options: {" ".join(DEFAULT_OPTIONS)}\n'
         '\n'
-        'Written by Laurence Liu <liuxy6@gmail.com>' % (NAME, VERSION, NAME, ' '.join(DEFAULT_OPTIONS))
+        'Written by Laurence Liu <liuxy6@gmail.com>'
     )
 
 
 def print_version():
     print(
-        '%s %s\n'
+        f'{NAME} {VERSION}\n'
         'Copyright (C) 2014-2020  Laurence Liu <liuxy6@gmail.com>\n'
         'License GPL v3: GNU GPL version 3 <http://www.gnu.org/licenses/>\n'
         'This program comes with ABSOLUTELY NO WARRANTY.\n'
         'This is free software, and you are welcome to redistribute it.\n'
         '\n'
-        'Written by Laurence Liu <liuxy6@gmail.com>' % (NAME, VERSION)
+        'Written by Laurence Liu <liuxy6@gmail.com>'
     )
 
 
 class Backupper(dict):
     def create_inexclude_file(self):
         inexclude = []
-        for action in ('include', 'exclude'):
+        for action in ('exclude', 'include'):
             entries = self[action]
             entries = '\n'.join(entries) + '\n' if entries else ''
 
@@ -72,14 +72,14 @@ class Backupper(dict):
             if not entries:
                 continue
 
-            with open('/tmp/backup.py_%s_%s_%s' % (getpid(), action, randrange(1, 10000)), 'x') as file:
+            with open(f'/tmp/backup.py_{getpid()}_{action}_{randrange(1,10000)}', 'x') as file:
                 file.write(entries)
 
-            self['_%s_file' % action] = file.name
+            self[f'_{action}_file'] = file.name
         return inexclude
 
     def remove_inexclude_file(self):
-        for field in ('_include_file', '_exclude_file'):
+        for field in ('_exclude_file', '_include_file'):
             if field in self:
                 filename = self[field]
                 if filename and isfile(filename):
@@ -87,9 +87,9 @@ class Backupper(dict):
                 del self[field]
 
     def gen_cmd(self):
-        include_from = '--include-from="%s"' % self['_include_file'] if '_include_file' in self else ''
-        exclude_from = '--exclude-from="%s"' % self['_exclude_file'] if '_exclude_file' in self else ''
-        return 'rsync %s %s %s "%s" "%s"' % (self['options'], include_from, exclude_from, self['src_dir'], self['dst_dir'])
+        exclude_from = f'--exclude-from="{self["_exclude_file"]}"' if '_exclude_file' in self else ''
+        include_from = f'--include-from="{self["_exclude_file"]}"' if '_include_file' in self else ''
+        return f'rsync {self["options"]} {exclude_from} {include_from} "{self["src_dir"]}" "{self["dst_dir"]}"'
 
     def run(self, dry_run):
         if not self['enabled']:
@@ -99,11 +99,11 @@ class Backupper(dict):
 
         cmd = self.gen_cmd()
 
-        LOGGER.debug('Run bash command: %s\nInclude:\n%s\nExclude:\n%s', cmd, inexclude[0], inexclude[1])
+        LOGGER.debug(f'Run bash command: {cmd}\nExclude:\n{inexclude[0]}\nInclude:\n{inexclude[1]}')
 
         if not dry_run:
             if call(cmd, shell=True, executable='/bin/bash'):
-                LOGGER.error('Something went wrong when executing bash command: %s\n', cmd)
+                LOGGER.error(f'Something went wrong when executing bash command: {cmd}\n')
 
         self.remove_inexclude_file()
 
@@ -111,7 +111,7 @@ class Backupper(dict):
 def get_backuppers(args):
     filepath = args.pop(0)
     configfile = open(filepath).read()
-    LOGGER.debug('Config file: %s', filepath)
+    LOGGER.debug(f'Config file: {filepath}')
 
     configs = {}
     exec(compile(configfile, '<string>', 'exec'), {'DEFAULT_OPTIONS': DEFAULT_OPTIONS}, configs)
@@ -125,8 +125,8 @@ def get_backupper(config, options_from_cli):
     backupper['enabled'] = config['enabled']
     backupper['src_dir'] = config['src_dir']
     backupper['dst_dir'] = config['dst_dir']
-    backupper['include'] = config.get('include', None)
     backupper['exclude'] = config.get('exclude', None)
+    backupper['include'] = config.get('include', None)
 
     backupper['options'] = ''
 
@@ -182,7 +182,7 @@ def main():
 
     backuppers = get_backuppers(args)
     for (name, backupper) in backuppers.items():
-        LOGGER.info('Run %s', name)
+        LOGGER.info(f'Run {name}')
         backupper.run(dry_run)
 
 
