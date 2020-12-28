@@ -87,9 +87,9 @@ class Backupper(dict):
                 del self[field]
 
     def gen_cmd(self):
+        include_from = f'--include-from="{self["_include_file"]}"' if '_include_file' in self else ''
         exclude_from = f'--exclude-from="{self["_exclude_file"]}"' if '_exclude_file' in self else ''
-        include_from = f'--include-from="{self["_exclude_file"]}"' if '_include_file' in self else ''
-        return f'rsync {self["options"]} {exclude_from} {include_from} "{self["src_dir"]}" "{self["dst_dir"]}"'
+        return f'rsync {self["options"]} {include_from} {exclude_from} "{self["src_dir"]}" "{self["dst_dir"]}"'
 
     def run(self, dry_run):
         if not self['enabled']:
