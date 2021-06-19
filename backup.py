@@ -9,7 +9,7 @@ from subprocess import call
 from sys import argv
 
 NAME = basename(argv.pop(0))
-VERSION = '0.12.0'
+VERSION = '0.13.0'
 
 DEFAULT_OPTIONS = [
     '--verbose',
@@ -22,7 +22,6 @@ DEFAULT_OPTIONS = [
     '--numeric-ids',
     '--inplace',
     '--delete',
-    '--delete-excluded',
 ]
 
 LOGGER = logging.getLogger('main')
