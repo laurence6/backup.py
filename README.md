@@ -22,7 +22,7 @@ A simple encapsulation of Rsync.
         -h, --help        print this help list and exit
         -V, --version     print program version and exit
 
-    Default rsync options: --verbose --human-readable --archive --hard-links --acls --xattrs --numeric-ids --inplace --delete --delete-excluded
+    Default rsync options: --verbose --human-readable --archive --hard-links --acls --xattrs --numeric-ids --delete
 
 
 ## Configuration

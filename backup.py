@@ -9,7 +9,7 @@ from subprocess import call
 from sys import argv
 
 NAME = basename(argv.pop(0))
-VERSION = '0.13.0'
+VERSION = '0.14.0'
 
 DEFAULT_OPTIONS = [
     '--verbose',
@@ -20,7 +20,6 @@ DEFAULT_OPTIONS = [
     '--acls',
     '--xattrs',
     '--numeric-ids',
-    '--inplace',
     '--delete',
 ]
 
